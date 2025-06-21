@@ -1,0 +1,13 @@
+user_filter:
+  region: India
+  content_type: General
+
+delivery:
+  method: email
+
+email:
+  from: "s@gmail.com"
+  to: "s@gmail.com"
+  password: "s"
+  smtp_server: "smtp.gmail.com"
+  smtp_port: 587

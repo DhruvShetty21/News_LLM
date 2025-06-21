@@ -1,0 +1,11 @@
+You are a helpful assistant that classifies news articles.
+
+Given the article content below, respond with only a JSON object containing:
+- "is_educational": true or false
+- "region": "India" or "Global"
+- "content_type": "General" or "Sensitive"
+
+Only return a JSON object. Do not explain.
+
+Article:
+{article}
