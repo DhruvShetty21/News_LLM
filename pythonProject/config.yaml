@@ -1,13 +1,19 @@
+# config.yaml
+
 user_filter:
-  region: India
-  content_type: General
+  topic: ""
+  region: ""
+  content_type: ""
 
+# 🔢 Limits
+max_articles: 50
+
+# ⚙️ Scoring settings
+scoring:
+  batch_size: 10
+  use_prefilter: true
+  min_score: 30
+
+# 📤 Delivery method
 delivery:
-  method: email
-
-email:
-  from: "s@gmail.com"
-  to: "s@gmail.com"
-  password: "s"
-  smtp_server: "smtp.gmail.com"
-  smtp_port: 587
+  method: "email"  # or "none"
