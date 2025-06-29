@@ -1,7 +1,7 @@
 import feedparser
 import requests
 import re
-from typing import List, Dict
+from typing import List, Dict, Optional
 from urllib.parse import urljoin, urlparse
 import html
 
@@ -19,25 +19,20 @@ def clean_title(title: str) -> str:
     return title
 
 def is_valid_image_url(url: str) -> bool:
-    """Check if URL is a valid image URL"""
     if not url:
         return False
     
-    # Remove query parameters for extension check
     clean_url = url.split('?')[0].lower()
     
-    # Check for common image extensions
     image_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg']
     has_extension = any(clean_url.endswith(ext) for ext in image_extensions)
     
-    # Check for common image hosting patterns
     image_patterns = [
         'images', 'img', 'photo', 'pics', 'media', 'upload', 'cdn', 'static',
         'thumb', 'resize', 'crop', 'avatar', 'logo', 'banner'
     ]
     has_pattern = any(pattern in url.lower() for pattern in image_patterns)
     
-    # Must have either extension or pattern, and be a valid URL
     try:
         parsed = urlparse(url)
         return (has_extension or has_pattern) and bool(parsed.netloc)
@@ -45,11 +40,9 @@ def is_valid_image_url(url: str) -> bool:
         return False
 
 def extract_image_from_entry(entry, base_url: str = None) -> str:
-    """Enhanced image extraction with multiple fallback methods"""
     image_url = None
     
     try:
-        # Method 1: media_thumbnail (most reliable)
         if hasattr(entry, 'media_thumbnail') and entry.media_thumbnail:
             for thumb in entry.media_thumbnail:
                 url = thumb.get('url') or thumb.get('href')
@@ -57,7 +50,6 @@ def extract_image_from_entry(entry, base_url: str = None) -> str:
                     image_url = url
                     break
         
-        # Method 2: media_content
         if not image_url and hasattr(entry, 'media_content') and entry.media_content:
             for media in entry.media_content:
                 url = media.get('url') or media.get('href')
@@ -66,7 +58,6 @@ def extract_image_from_entry(entry, base_url: str = None) -> str:
                     image_url = url
                     break
         
-        # Method 3: enclosures
         if not image_url and hasattr(entry, 'enclosures') and entry.enclosures:
             for enc in entry.enclosures:
                 url = enc.get('href') or enc.get('url')
@@ -75,7 +66,6 @@ def extract_image_from_entry(entry, base_url: str = None) -> str:
                     image_url = url
                     break
         
-        # Method 4: Extract from summary/content HTML
         if not image_url:
             content_fields = [
                 entry.get('summary', ''),
@@ -87,10 +77,8 @@ def extract_image_from_entry(entry, base_url: str = None) -> str:
                 if not content:
                     continue
                 
-                # Decode HTML entities
                 content = html.unescape(str(content))
                 
-                # Multiple regex patterns for image extraction
                 img_patterns = [
                     r'<img[^>]+src=["\']([^"\']+)["\'][^>]*>',
                     r'<img[^>]+src=([^\s>]+)',
@@ -105,7 +93,6 @@ def extract_image_from_entry(entry, base_url: str = None) -> str:
                     for match in matches:
                         url = match.strip()
                         if is_valid_image_url(url):
-                            # Convert relative URLs to absolute
                             if base_url and url.startswith('/'):
                                 url = urljoin(base_url, url)
                             image_url = url
@@ -115,7 +102,6 @@ def extract_image_from_entry(entry, base_url: str = None) -> str:
                 if image_url:
                     break
         
-        # Method 5: Check for Open Graph or Twitter Card images in links
         if not image_url and hasattr(entry, 'links') and entry.links:
             for link in entry.links:
                 if link.get('rel') == 'enclosure' and 'image' in link.get('type', ''):
@@ -124,11 +110,9 @@ def extract_image_from_entry(entry, base_url: str = None) -> str:
                         image_url = url
                         break
         
-        # Method 6: Look for image in tags
         if not image_url and hasattr(entry, 'tags') and entry.tags:
             for tag in entry.tags:
                 if 'image' in tag.get('term', '').lower():
-                    # Sometimes images are stored in tag attributes
                     for attr in ['href', 'url', 'src']:
                         url = tag.get(attr)
                         if is_valid_image_url(url):
@@ -137,16 +121,12 @@ def extract_image_from_entry(entry, base_url: str = None) -> str:
                 if image_url:
                     break
         
-        # Clean and validate final URL
         if image_url:
-            # Remove any surrounding quotes or whitespace
             image_url = image_url.strip('\'"')
             
-            # Convert relative URLs to absolute if base_url is provided
             if base_url and not image_url.startswith(('http://', 'https://')):
                 image_url = urljoin(base_url, image_url)
             
-            # Final validation
             if not is_valid_image_url(image_url):
                 image_url = None
     
@@ -156,109 +136,73 @@ def extract_image_from_entry(entry, base_url: str = None) -> str:
     
     return image_url
 
-def get_topic_feeds(topic: str, region: str) -> List[str]:
-    topic = topic.lower()
-    region = region.lower()
-
-    feeds = {
+def get_all_available_sources() -> Dict[str, Dict[str, List[Dict]]]:
+    """Return all available sources organized by topic and region"""
+    return {
         "education": {
             "india": [
-                "https://indianexpress.com/section/education/feed/",
-                "https://www.hindustantimes.com/feeds/rss/education/rssfeed.xml",
-                "https://www.jagranjosh.com/rss-feeds/rssfeed-education.xml"
+                {"name": "Indian Express Education", "url": "https://indianexpress.com/section/education/feed/"},
+                {"name": "Hindustan Times Education", "url": "https://www.hindustantimes.com/feeds/rss/education/rssfeed.xml"},
+                {"name": "Jagran Josh Education", "url": "https://www.jagranjosh.com/rss-feeds/rssfeed-education.xml"}
             ],
             "global": [
-                "https://www.edutopia.org/rss.xml",
-                "https://feeds.bbci.co.uk/news/education/rss.xml",
-                "https://www.insidehighered.com/rss/news"
+                {"name": "Edutopia", "url": "https://www.edutopia.org/rss.xml"},
+                {"name": "BBC Education", "url": "https://feeds.bbci.co.uk/news/education/rss.xml"},
+                {"name": "Inside Higher Ed", "url": "https://www.insidehighered.com/rss/news"}
             ]
         },
         "technology": {
             "india": [
-                "https://www.gadgets360.com/rss/news",
-                "https://tech.hindustantimes.com/rss/tech/news",
-                "https://indianexpress.com/section/technology/feed/"
+                {"name": "Gadgets 360", "url": "https://www.gadgets360.com/rss/news"},
+                {"name": "Hindustan Times Tech", "url": "https://tech.hindustantimes.com/rss/tech/news"},
+                {"name": "Indian Express Technology", "url": "https://indianexpress.com/section/technology/feed/"}
             ],
             "global": [
-                "https://www.theverge.com/rss/index.xml",
-                "https://techcrunch.com/feed/",
-                "https://www.zdnet.com/news/rss.xml"
+                {"name": "The Verge", "url": "https://www.theverge.com/rss/index.xml"},
+                {"name": "TechCrunch", "url": "https://techcrunch.com/feed/"},
+                {"name": "ZDNet", "url": "https://www.zdnet.com/news/rss.xml"}
             ]
         },
         "science": {
             "india": [
-                "https://www.thehindu.com/sci-tech/science/feeder/default.rss",
-                "https://currentaffairs.adda247.com/feed/",
-                "https://www.downtoearth.org.in/rss/science"
+                {"name": "The Hindu Science", "url": "https://www.thehindu.com/sci-tech/science/feeder/default.rss"},
+                {"name": "Current Affairs", "url": "https://currentaffairs.adda247.com/feed/"},
+                {"name": "Down To Earth Science", "url": "https://www.downtoearth.org.in/rss/science"}
             ],
             "global": [
-                "https://www.sciencedaily.com/rss/top/science.xml",
-                "https://rss.sciam.com/ScientificAmerican-News",
-                "https://www.nature.com/subjects/science.rss"
+                {"name": "Science Daily", "url": "https://www.sciencedaily.com/rss/top/science.xml"},
+                {"name": "Scientific American", "url": "https://rss.sciam.com/ScientificAmerican-News"},
+                {"name": "Nature Science", "url": "https://www.nature.com/subjects/science.rss"}
             ]
         },
-        "health": {
-            "india": [
-                "https://www.healthcareradius.in/rss",
-                "https://health.economictimes.indiatimes.com/rss/topstories.cms",
-                "https://www.expresshealthcare.in/feed/"
-            ],
-            "global": [
-                "https://www.medicalnewstoday.com/rss",
-                "https://www.who.int/feeds/entity/mediacentre/news/en/rss.xml",
-                "https://www.healthline.com/rss"
-            ]
-        },
-        "business": {
-            "india": [
-                "https://www.moneycontrol.com/rss/latestnews.xml",
-                "https://economictimes.indiatimes.com/rssfeedstopstories.cms",
-                "https://www.business-standard.com/rss/home_page_top_stories.rss"
-            ],
-            "global": [
-                "https://www.bloomberg.com/feed/podcast/etf-report.xml",
-                "https://www.reuters.com/rssFeed/businessNews",
-                "https://feeds.bbci.co.uk/news/business/rss.xml"
-            ]
-        },
-        "finance": {
-            "india": [
-                "https://www.livemint.com/rss/money",
-                "https://www.financialexpress.com/feed/",
-                "https://www.thehindubusinessline.com/feeder/default.rss"
-            ],
-            "global": [
-                "https://www.investing.com/rss/news_25.rss",
-                "https://www.marketwatch.com/rss/topstories",
-                "https://www.cnbc.com/id/100003114/device/rss/rss.html"
-            ]
-        },
-        "environment": {
-            "india": [
-                "https://www.downtoearth.org.in/rss/environment",
-                "https://www.thehindu.com/sci-tech/energy-and-environment/feeder/default.rss",
-                "https://www.indiaenvironmentportal.org.in/rss"
-            ],
-            "global": [
-                "https://news.un.org/feed/subscribe/en/news/topic/climate-change/feed/rss.xml",
-                "https://www.nature.com/subjects/environmental-sciences.rss",
-                "https://www.theguardian.com/environment/rss"
-            ]
-        }
+        "general": [
+            {"name": "Times of India Top Stories", "url": "https://timesofindia.indiatimes.com/rssfeedstopstories.cms"},
+            {"name": "The Hindu National News", "url": "https://www.thehindu.com/news/national/feeder/default.rss"},
+            {"name": "BBC World News", "url": "https://feeds.bbci.co.uk/news/world/rss.xml"}
+        ]
     }
 
-    general_feeds = [
-        "https://timesofindia.indiatimes.com/rssfeedstopstories.cms",
-        "https://www.thehindu.com/news/national/feeder/default.rss",
-        "https://feeds.bbci.co.uk/news/world/rss.xml"
-    ]
+def get_topic_feeds(topic: str, region: str, custom_sources: Optional[List[str]] = None) -> List[str]:
+    topic = topic.lower()
+    region = region.lower()
+    all_sources = get_all_available_sources()
 
-    topic_feeds = feeds.get(topic, {})
-    region_feeds = topic_feeds.get(region, [])
+    topic_feeds = all_sources.get(topic, {})
+    region_feeds = [feed["url"] for feed in topic_feeds.get(region, [])]
+    general_feeds = [feed["url"] for feed in all_sources.get("general", [])]
+
+    if custom_sources:
+        # Filter both topic and general feeds by selected sources
+        selected_feeds = []
+        for feed in topic_feeds.get(region, []) + all_sources.get("general", []):
+            if feed["name"] in custom_sources:
+                selected_feeds.append(feed["url"])
+        return selected_feeds
+    
     return region_feeds + general_feeds
 
-def fetch_rss_articles(topic: str, region: str) -> List[Dict]:
-    rss_urls = get_topic_feeds(topic, region)
+def fetch_rss_articles(topic: str, region: str, custom_sources: Optional[List[str]] = None) -> List[Dict]:
+    rss_urls = get_topic_feeds(topic, region, custom_sources)
     articles = []
     successful_feeds = 0
     total_images_found = 0
@@ -280,12 +224,10 @@ def fetch_rss_articles(topic: str, region: str) -> List[Dict]:
                 if not title:
                     continue
 
-                # Enhanced image extraction
                 image_url = extract_image_from_entry(entry, base_url)
                 if image_url:
                     total_images_found += 1
 
-                # Clean summary by removing HTML tags
                 summary = entry.get("summary", "")
                 clean_summary = re.sub(r"<[^<]+?>", "", html.unescape(summary))
 
@@ -326,7 +268,6 @@ def fetch_google_news_articles(topic: str, region: str) -> List[Dict]:
             if not title:
                 continue
             
-            # Get image from Google News API
             image_url = item.get("urlToImage", "")
             if image_url and is_valid_image_url(image_url):
                 images_found += 1
@@ -349,11 +290,11 @@ def fetch_google_news_articles(topic: str, region: str) -> List[Dict]:
         print(f"❌ Exception during Google News fetch: {e}")
         return []
 
-def fetch_articles(topic: str, region: str) -> List[Dict]:
+def fetch_articles(topic: str, region: str, custom_sources: Optional[List[str]] = None) -> List[Dict]:
     print(f"\n🚀 Starting article fetching for: {topic} [{region.title()}]")
 
-    rss_articles = fetch_rss_articles(topic, region)
-    rss_articles = rss_articles[:200]  # ✅ LIMIT to 200 RSS articles
+    rss_articles = fetch_rss_articles(topic, region, custom_sources)
+    rss_articles = rss_articles[:200]
     print(f"📡 RSS articles: {len(rss_articles)}")
 
     google_news_articles = fetch_google_news_articles(topic, region)
@@ -361,7 +302,6 @@ def fetch_articles(topic: str, region: str) -> List[Dict]:
 
     all_articles = rss_articles + google_news_articles
 
-    # Remove duplicates
     seen = set()
     unique_articles = []
     total_with_images = 0
@@ -378,18 +318,3 @@ def fetch_articles(topic: str, region: str) -> List[Dict]:
     print(f"🖼️ Articles with images: {total_with_images}/{len(unique_articles)} ({total_with_images/len(unique_articles)*100:.1f}%)")
     
     return unique_articles
-
-# Debug run
-if __name__ == "__main__":
-    articles = fetch_articles("education", "india")
-    print(f"\n📊 Sample articles with images:")
-    count = 0
-    for i, article in enumerate(articles, 1):
-        if article.get('image'):
-            count += 1
-            print(f"{count}. {article['title']}")
-            print(f"   🖼️ Image: {article['image']}")
-            print(f"   📰 Source: {article['source']}")
-            print()
-            if count >= 5:  # Show first 5 with images
-                break
