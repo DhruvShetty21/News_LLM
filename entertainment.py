@@ -5,32 +5,6 @@ import time
 
 # --- Indian Entertainment Sources (Placeholders) ---
 
-def scrape_india_today_entertainment_india():
-    try:
-        session = get_session()
-        url = "https://www.indiatoday.in/entertainment"
-        response = session.get(url, timeout=15)
-        soup = BeautifulSoup(response.content, "html.parser")
-        articles = []
-        seen_titles = set()
-
-        # The articles are in 'a' tags with a 'title' attribute, inside an 'h3'
-        for tag in soup.select('h3 a[title]'):
-            title = clean_title(tag.get('title'))
-            href = tag.get('href', '')
-
-            if title and href and title not in seen_titles:
-                if href.startswith('/'):
-                    href = "https://www.indiatoday.in" + href
-                
-                articles.append({"title": title, "url": href, "source": "India Today"})
-                seen_titles.add(title)
-                
-        return articles
-    except Exception as e:
-        print(f"Error scraping India Today Entertainment: {e}")
-        return []
-
 def scrape_financial_express_entertainment_india():
     try:
         session = get_session()
@@ -283,7 +257,6 @@ def scrape_entertainment_news(region="India", sources=None):
     all_articles = []
     
     india_source_map = {
-        "india_today_entertainment": scrape_india_today_entertainment_india,
         "financial_express_entertainment": scrape_financial_express_entertainment_india,
         "ndtv_entertainment": scrape_ndtv_entertainment_india,
         "deccan_herald_entertainment": scrape_deccan_herald_entertainment_india,
@@ -324,7 +297,6 @@ def scrape_entertainment_news(region="India", sources=None):
 if __name__ == "__main__":
     print("\n--- Testing Indian Entertainment Sources ---\n")
     india_source_map = {
-        "india_today_entertainment": scrape_india_today_entertainment_india,
         "financial_express_entertainment": scrape_financial_express_entertainment_india,
         "ndtv_entertainment": scrape_ndtv_entertainment_india,
         "deccan_herald_entertainment": scrape_deccan_herald_entertainment_india,
