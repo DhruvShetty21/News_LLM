@@ -31,33 +31,66 @@ environment_keywords = [
     "pollution control board", "jal shakti", "climate action", "unfccc", "paris agreement"
 ]
 
+# Add this to the list of country names except India
+COUNTRY_KEYWORDS = [
+    'afghanistan', 'albania', 'algeria', 'andorra', 'angola', 'argentina', 'armenia', 'australia', 'austria',
+    'azerbaijan', 'bahamas', 'bahrain', 'bangladesh', 'barbados', 'belarus', 'belgium', 'belize', 'benin',
+    'bhutan', 'bolivia', 'bosnia', 'botswana', 'brazil', 'brunei', 'bulgaria', 'burkina', 'burundi', 'cambodia',
+    'cameroon', 'canada', 'cape verde', 'central african republic', 'chad', 'chile', 'china', 'colombia',
+    'comoros', 'congo', 'costa rica', 'croatia', 'cuba', 'cyprus', 'czech', 'denmark', 'djibouti', 'dominica',
+    'dominican republic', 'east timor', 'ecuador', 'egypt', 'el salvador', 'equatorial guinea', 'eritrea',
+    'estonia', 'eswatini', 'ethiopia', 'fiji', 'finland', 'france', 'gabon', 'gambia', 'georgia', 'germany',
+    'ghana', 'greece', 'grenada', 'guatemala', 'guinea', 'guinea-bissau', 'guyana', 'haiti', 'honduras',
+    'hungary', 'iceland', 'indonesia', 'iran', 'iraq', 'ireland', 'israel', 'italy', 'ivory coast', 'jamaica',
+    'japan', 'jordan', 'kazakhstan', 'kenya', 'kiribati', 'korea', 'kosovo', 'kuwait', 'kyrgyzstan', 'laos',
+    'latvia', 'lebanon', 'lesotho', 'liberia', 'libya', 'liechtenstein', 'lithuania', 'luxembourg', 'madagascar',
+    'malawi', 'malaysia', 'maldives', 'mali', 'malta', 'marshall islands', 'mauritania', 'mauritius', 'mexico',
+    'micronesia', 'moldova', 'monaco', 'mongolia', 'montenegro', 'morocco', 'mozambique', 'myanmar', 'namibia',
+    'nauru', 'nepal', 'netherlands', 'new zealand', 'nicaragua', 'niger', 'nigeria', 'north macedonia',
+    'norway', 'oman', 'pakistan', 'palau', 'palestine', 'panama', 'papua new guinea', 'paraguay', 'peru',
+    'philippines', 'poland', 'portugal', 'qatar', 'romania', 'russia', 'rwanda', 'saint kitts', 'saint lucia',
+    'saint vincent', 'samoa', 'san marino', 'sao tome', 'saudi arabia', 'senegal', 'serbia', 'seychelles',
+    'sierra leone', 'singapore', 'slovakia', 'slovenia', 'solomon islands', 'somalia', 'south africa',
+    'south sudan', 'spain', 'sri lanka', 'sudan', 'suriname', 'sweden', 'switzerland', 'syria', 'taiwan',
+    'tajikistan', 'tanzania', 'thailand', 'togo', 'tonga', 'trinidad', 'tunisia', 'turkey', 'turkmenistan',
+    'tuvalu', 'uganda', 'ukraine', 'united arab emirates', 'united kingdom', 'uk', 'usa', 'united states',
+    'uruguay', 'uzbekistan', 'vanuatu', 'vatican', 'venezuela', 'vietnam', 'yemen', 'zambia', 'zimbabwe'
+]
+
+def filter_non_india_articles(title):
+    title_lower = title.lower()
+    for country in COUNTRY_KEYWORDS:
+        if country in title_lower:
+            return False
+    return True
+
 #--------INDIAN NEWS-------------------
 
 def scrape_deccan_herald():
     try:
         session = get_http_session()
-        url = "https://www.deccanherald.com/specials/environment"
+        url = "https://www.deccanherald.com/environment"
         response = session.get(url, timeout=15)
         soup = BeautifulSoup(response.content, 'html.parser')
         articles = []
         seen_titles = set()
-        for card in soup.find_all('div', class_='story-card-15'):
+        for a_tag in soup.find_all('a', href=True):
+            card = a_tag.find('div', class_='story-card-15')
+            if not card:
+                continue
             headline = card.find('h2', class_='headline')
             if not headline:
                 continue
             title = normalize_title(headline.text)
-            if not any(keyword in title.lower() for keyword in environment_keywords):
+            if not title or title in seen_titles:
                 continue
-            a_tag = headline.find_parent('a')
-            if not a_tag:
-                continue
-            href = a_tag.get('href', '')
+            href = a_tag['href']
             full_url = f"https://www.deccanherald.com{href}" if href.startswith('/') else href
-            if title not in seen_titles:
-                articles.append({"title": title, "url": full_url, "source": "Deccan Herald"})
-                seen_titles.add(title)
+            articles.append({"title": title, "url": full_url, "source": "Deccan Herald"})
+            seen_titles.add(title)
         return articles
-    except Exception:
+    except Exception as e:
+        print(f"Error scraping Deccan Herald: {e}")
         return []
 
 
@@ -75,65 +108,119 @@ def scrape_indian_express():
                 continue
             title = normalize_title(a_tag.get_text())
             href = a_tag['href']
-            # Only include articles from the environment section
             if '/environment/' not in href:
                 continue
-            if title and title not in seen_titles:
-                articles.append({"title": title, "url": href, "source": "Indian Express"})
-                seen_titles.add(title)
+            if not title or title in seen_titles:
+                continue
+            articles.append({"title": title, "url": href, "source": "Indian Express"})
+            seen_titles.add(title)
         return articles
-    except Exception:
+    except Exception as e:
+        print(f"Error scraping Indian Express: {e}")
         return []
 
 def scrape_ndtv():
     try:
         session = get_http_session()
-        url = "https://www.ndtv.com/topic/environment"
+        url = "https://www.ndtv.com/environment"
         response = session.get(url, timeout=15)
         soup = BeautifulSoup(response.content, "html.parser")
         articles = []
         seen_titles = set()
-        for tag in soup.select("h2 a, h3 a"):
-            title = normalize_title(tag.get_text())
-            href = tag.get("href", "")
-            if not any(kw in title.lower() for kw in environment_keywords):
+        for div in soup.find_all('div', class_='NwsLstPg_txt-wrp'):
+            a_tag = div.find('a', class_='NwsLstPg_ttl', href=True)
+            if not a_tag:
                 continue
-            if title and title not in seen_titles and href:
-                if href.startswith("/"):
-                    href = "https://www.ndtv.com" + href
-                elif not href.startswith("http"):
-                    continue
-                articles.append({"title": title, "url": href, "source": "NDTV"})
-                seen_titles.add(title)
+            title = normalize_title(a_tag.get_text())
+            href = a_tag['href']
+            if not title or title in seen_titles:
+                continue
+            articles.append({"title": title, "url": href, "source": "NDTV"})
+            seen_titles.add(title)
         return articles
-    except Exception:
+    except Exception as e:
+        print(f"Error scraping NDTV: {e}")
         return []
 
-def scrape_hindustan_times():
-    articles = []
-    seen_titles = set()
-    session = get_http_session()
+def scrape_hindustan_times_environment():
     try:
-        for page in range(1, 4):  # Scrape pages 1 to 3
-            url = f"https://www.hindustantimes.com/environment/page-{page}" if page > 1 else "https://www.hindustantimes.com/environment"
+        session = get_http_session()
+        url = "https://www.hindustantimes.com/environment"
+        response = session.get(url, timeout=15)
+        soup = BeautifulSoup(response.content, "html.parser")
+        articles = []
+        seen_titles = set()
+        for h3 in soup.find_all('h3', class_='hdg3'):
+            a_tag = h3.find('a', href=True)
+            if not a_tag:
+                continue
+            title = normalize_title(a_tag.get_text())
+            href = a_tag['href']
+            if not title or title in seen_titles:
+                continue
+            # Filter out articles mentioning any country except India
+            if not filter_non_india_articles(title):
+                continue
+            full_url = f"https://www.hindustantimes.com{href}" if href.startswith('/') else href
+            articles.append({"title": title, "url": full_url, "source": "Hindustan Times"})
+            seen_titles.add(title)
+        return articles
+    except Exception as e:
+        print(f"Error scraping Hindustan Times Environment: {e}")
+        return []
+
+def scrape_times_of_india_environment():
+    try:
+        session = get_http_session()
+        url = "https://timesofindia.indiatimes.com/home/environment"
+        response = session.get(url, timeout=15)
+        soup = BeautifulSoup(response.content, "html.parser")
+        articles = []
+        seen_titles = set()
+        for span in soup.find_all('span', class_='w_tle'):
+            a_tag = span.find('a', href=True, title=True)
+            if not a_tag:
+                continue
+            title = normalize_title(a_tag.get_text())
+            href = a_tag['href']
+            if not title or title in seen_titles:
+                continue
+            # Filter out articles mentioning any country except India
+            if not filter_non_india_articles(title):
+                continue
+            full_url = f"https://timesofindia.indiatimes.com{href}" if href.startswith('/') else href
+            articles.append({"title": title, "url": full_url, "source": "Times of India"})
+            seen_titles.add(title)
+        return articles
+    except Exception as e:
+        print(f"Error scraping Times of India Environment: {e}")
+        return []
+
+def scrape_the_hindu_environment():
+    try:
+        session = get_http_session()
+        articles = []
+        seen_titles = set()
+        for page in range(1, 6):  # Pages 1 to 5
+            url = f"https://www.thehindu.com/sci-tech/energy-and-environment/?page={page}"
             response = session.get(url, timeout=15)
             soup = BeautifulSoup(response.content, "html.parser")
-            for div in soup.find_all('div', class_='cartHolder listView track '):
-                h3 = div.find('h3', class_='hdg3')
-                if not h3:
-                    continue
-                a_tag = h3.find('a', href=True)
+            for h3 in soup.find_all("h3", class_="title big"):
+                a_tag = h3.find("a", href=True)
                 if not a_tag:
                     continue
                 title = normalize_title(a_tag.get_text())
-                href = a_tag['href']
-                if href.startswith('/'):
-                    href = "https://www.hindustantimes.com" + href
-                if title and title not in seen_titles:
-                    articles.append({"title": title, "url": href, "source": "Hindustan Times"})
-                    seen_titles.add(title)
+                href = a_tag["href"]
+                if not title or title in seen_titles:
+                    continue
+                # Filter out articles mentioning any country except India
+                if not filter_non_india_articles(title):
+                    continue
+                articles.append({"title": title, "url": href, "source": "The Hindu"})
+                seen_titles.add(title)
         return articles
-    except Exception:
+    except Exception as e:
+        print(f"Error scraping The Hindu Environment: {e}")
         return []
 
 #--------GLOBAL NEWS-------------------
@@ -207,7 +294,9 @@ def scrape_environment_news(region="India", sources=None):
         "deccan_herald": scrape_deccan_herald,
         "indian_express": scrape_indian_express,
         "ndtv": scrape_ndtv,
-        "hindustan_times": scrape_hindustan_times,
+        "hindustan_times": scrape_hindustan_times_environment,
+        "times_of_india": scrape_times_of_india_environment,
+        "the_hindu": scrape_the_hindu_environment,
     }
     global_source_map = {
         "euronews": scrape_euronews,
