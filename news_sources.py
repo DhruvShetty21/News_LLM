@@ -638,6 +638,17 @@ def scrape_news(region, sources=None):
     articles = []
     
     errors = []
+    # Define allowed sources for each region
+    allowed_sources = {
+        "India": [
+            "flipboard", "scoopit", "hindustan_times", "times_of_india", "indian_express",
+            "the_hindu", "deccan_herald", "ndtv", "financial_express", "india_today"
+        ],
+        "Global": [
+            "flipboard", "scoopit", "bbc", "guardian", "nytimes", "washington_post",
+            "telegraph", "times_higher_education", "inside_higher_ed", "edweek", "chronicle"
+        ]
+    }
     if not sources:
         print(f"Scraping news for region: {region}")
 
@@ -687,6 +698,9 @@ def scrape_news(region, sources=None):
                 print(error_msg)
                 errors.append(error_msg)
     else:
+        # Filter sources to only those allowed for the selected region
+        region_sources = allowed_sources.get(region, [])
+        sources = [src for src in sources if src in region_sources]
         source_map = {
             # "google_news": scrape_google_news,  # REMOVED
             "flipboard": lambda: scrape_flipboard(region),

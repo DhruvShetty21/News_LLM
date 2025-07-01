@@ -278,6 +278,16 @@ function showSources() {
             globalBox.innerHTML += `<label><input type="checkbox" name="sources" value="${src.value}" checked> ${src.label}</label>`;
         });
     }
+    // Uncheck all checkboxes in the hidden region
+    if (region === 'India') {
+        // Uncheck all checkboxes in globalBox
+        const globalInputs = globalBox.querySelectorAll('input[type="checkbox"]');
+        globalInputs.forEach(cb => cb.checked = false);
+    } else {
+        // Uncheck all checkboxes in indiaBox
+        const indiaInputs = indiaBox.querySelectorAll('input[type="checkbox"]');
+        indiaInputs.forEach(cb => cb.checked = false);
+    }
 }
 window.onload = function() {
     showCategoryOptions();
