@@ -1,0 +1,9 @@
+requests==2.31.0
+beautifulsoup4==4.12.2
+flask
+python-dotenv
+langchain
+langchain-google-genai
+gunicorn
+# The following are dependencies of above, but not directly needed:
+# urllib3==2.4.0

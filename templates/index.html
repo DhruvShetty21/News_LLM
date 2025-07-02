@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>📰 Education News Digest</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>📰 Education News Digest</h1>
+        <p class="subtitle">Get personalized education news articles delivered directly to your email.</p>
+        <form method="post" class="news-form">
+            <div class="form-group">
+                <label for="email">Your Email</label>
+                <input type="text" id="email" name="email" placeholder="example@email.com, another@email.com" required>
+                <small>You can add multiple comma seperated email ids</small>
+            </div>
+            <div class="form-group">
+                <label for="category">News Category</label>
+                <select id="category" name="category" class="styled-dropdown" onchange="showCategoryOptions()" required>
+                    <option value="general">General Education</option>
+                    <option value="higher_ed">Higher Education</option>
+                    <option value="business_and_finance">Business & Finance</option>
+                    <option value="tech">Technology</option>
+                    <option value="sports">Sports</option>
+                    <option value="entertainment">Entertainment</option>
+                    <option value="health">Health</option>
+                    <option value="environment">Environment</option>
+                    <option value="industry">Industry</option>
+                </select>
+            </div>
+            
+<div class="form-group" id="region-group">
+    <label>News Region</label>
+    <div class="radio-group">
+       <label><input type="radio" name="region" value="India" onchange="showSources()" required> India</label>
+       <label><input type="radio" name="region" value="Global" onchange="showSources()" required> Global</label>
+    </div>
+</div>
+<div class="form-group" id="india-sources">
+    <label>Select Indian News Sources:</label>
+    <div class="checkbox-group" id="india-sources-checkboxes">
+        <!-- Indian sources will be dynamically filled -->
+    </div>
+</div>
+<div class="form-group" id="global-sources" style="display:none;">
+    <label>Select Global News Sources:</label>
+    <div class="checkbox-group" id="global-sources-checkboxes">
+        <!-- Global sources will be dynamically filled -->
+    </div>
+</div>
+            <div class="form-group">
+                <label>Number of news articles:</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="top_n" value="10" checked> 10</label>
+                    <label><input type="radio" name="top_n" value="20"> 20</label>
+                    <label><input type="radio" name="top_n" value="30"> 30</label>
+                </div>
+                <small class="info">Number of top news articles to receive</small>
+            </div>
+            <button type="submit" class="submit-btn">Send Me News!</button>
+        </form>
+        <div class="status">
+            {% with messages = get_flashed_messages() %}
+              {% if messages %}
+                <ul>
+                {% for message in messages %}
+                  <li>{{ message }}</li>
+                {% endfor %}
+                </ul>
+              {% endif %}
+            {% endwith %}
+        </div>
+        
+    </div>
+
+
+<script>
+// Define sources for each category and region
+const sources = {
+    higher_ed: {
+        India: [
+            { value: 'hindustan_times', label: 'Hindustan Times' },
+            { value: 'indian_express', label: 'Indian Express' },
+            { value: 'deccan_herald', label: 'Deccan Herald' },
+            { value: 'ndtv', label: 'NDTV' },
+            { value: 'financial_express', label: 'Financial Express' }
+        ],
+        Global: [
+            { value: 'guardian', label: 'The Guardian' },
+            { value: 'times_higher_education', label: 'Times Higher Education' },
+            { value: 'inside_higher_ed', label: 'Inside Higher Ed' },
+            { value: 'chronicle', label: 'The Chronicle' }
+        ]
+    },
+    entertainment: {
+        India: [
+            { value: 'india_today_entertainment', label: 'India Today' },
+            { value: 'financial_express_entertainment', label: 'Financial Express' },
+            { value: 'ndtv_entertainment', label: 'NDTV' },
+            { value: 'deccan_herald_entertainment', label: 'Deccan Herald' },
+            { value: 'hindustan_times_entertainment', label: 'Hindustan Times' },
+            { value: 'times_of_india_entertainment', label: 'Times of India' },
+            { value: 'indian_express_entertainment', label: 'Indian Express' },
+            { value: 'the_hindu_entertainment', label: 'The Hindu' }
+        ],
+        Global: [
+            { value: 'bbc_entertainment', label: 'BBC Entertainment' },
+            { value: 'guardian_film', label: 'The Guardian Film' },
+            { value: 'washington_post_entertainment', label: 'Washington Post Entertainment' },
+            { value: 'cnn_entertainment', label: 'CNN Entertainment' }
+        ]
+    },
+    sports: {
+        India: [
+            { value: 'espncricinfo', label: 'ESPN Cricinfo' },
+            { value: 'indian_express_sports', label: 'Indian Express' },
+            { value: 'ndtv_sports', label: 'NDTV Sports' },
+            { value: 'the_hindu', label: 'The Hindu' }
+        ],
+        Global: [
+            { value: 'espn_global', label: 'ESPN' },
+            { value: 'guardian_sports', label: 'The Guardian' },
+            { value: 'bbc_sport', label: 'BBC Sport' }
+        ]
+    },
+    tech: {
+        India: [
+            { value: 'hindustan_times', label: 'Hindustan Times' },
+            { value: 'ndtv', label: 'NDTV' },
+            { value: 'deccan_herald', label: 'Deccan Herald' },
+            { value: 'financial_express', label: 'Financial Express' },
+            { value: 'indian_express', label: 'Indian Express' }
+        ],
+        Global: [
+            { value: 'guardian', label: 'The Guardian' },
+            { value: 'euronews', label: 'Euronews' },
+            { value: 'cnbc', label: 'CNBC' }
+        ]
+    },
+    business_and_finance: {
+        India: [
+            { value: 'economic_times', label: 'Economic Times' },
+            { value: 'business_standard', label: 'Business Standard' },
+            { value: 'moneycontrol', label: 'Moneycontrol' },
+            { value: 'financial_express', label: 'Financial Express' },
+            { value: 'mint', label: 'Mint' },
+            { value: 'hindustan_times', label: 'Hindustan Times' },
+            { value: 'ndtv', label: 'NDTV' },
+            { value: 'deccan_herald', label: 'Deccan Herald' },
+            { value: 'indian_express', label: 'Indian Express' }
+        ],
+        Global: [
+            { value: 'reuters', label: 'Reuters' },
+            { value: 'bloomberg', label: 'Bloomberg' },
+            { value: 'financial_times', label: 'Financial Times' },
+            { value: 'cnbc', label: 'CNBC' },
+            { value: 'wall_street_journal', label: 'Wall Street Journal' },
+            { value: 'times_higher_education', label: 'Times Higher Education' },
+            { value: 'guardian', label: 'The Guardian' }
+        ]
+    },
+    general: {
+        India: [
+            { value: 'flipboard', label: 'Flipboard' },
+            { value: 'scoopit', label: 'Scoop.it' },
+            { value: 'hindustan_times', label: 'Hindustan Times' },
+            { value: 'times_of_india', label: 'Times of India' },
+            { value: 'indian_express', label: 'Indian Express' },
+            { value: 'the_hindu', label: 'The Hindu' },
+            { value: 'deccan_herald', label: 'Deccan Herald' },
+            { value: 'ndtv', label: 'NDTV' },
+            { value: 'financial_express', label: 'Financial Express' },
+            { value: 'india_today', label: 'India Today' }
+        ],
+        Global: [
+            { value: 'flipboard', label: 'Flipboard' },
+            { value: 'scoopit', label: 'Scoop.it' },
+            { value: 'bbc', label: 'BBC' },
+            { value: 'guardian', label: 'The Guardian' },
+            { value: 'nytimes', label: 'NY Times' },
+            { value: 'washington_post', label: 'Washington Post' },
+            { value: 'telegraph', label: 'The Telegraph' },
+            { value: 'times_higher_education', label: 'Times Higher Education' },
+            { value: 'inside_higher_ed', label: 'Inside Higher Ed' },
+            { value: 'edweek', label: 'EdWeek' },
+            { value: 'chronicle', label: 'The Chronicle' }
+        ]
+    },
+    environment: {
+        India: [
+            { value: 'deccan_herald', label: 'Deccan Herald' },
+            { value: 'indian_express', label: 'Indian Express' },
+            { value: 'ndtv', label: 'NDTV' },
+            { value: 'hindustan_times', label: 'Hindustan Times' }
+        ],
+        Global: [
+            { value: 'euronews', label: 'Euronews' },
+            { value: 'cnbc', label: 'CNBC' },
+            { value: 'guardian', label: 'The Guardian' }
+        ]
+    },
+    industry: {
+        India: [
+            { value: 'the_hindu', label: 'The Hindu' },
+            { value: 'financial_express', label: 'Financial Express' },
+            { value: 'manufacturing_today', label: 'Manufacturing Today India' }
+        ],
+        Global: [
+            { value: 'bbc', label: 'BBC' },
+            { value: 'nytimes', label: 'NY Times' },
+            { value: 'guardian', label: 'The Guardian' },
+            { value: 'bloomberg', label: 'Bloomberg' }
+        ]
+    },
+    health: {
+    India: [
+        { value: 'hindustan_times', label: 'Hindustan Times' },
+        { value: 'ndtv', label: 'NDTV' },
+        { value: 'deccan_herald', label: 'Deccan Herald' },
+        { value: 'indian_express', label: 'Indian Express' }
+    ],
+    Global: [
+        { value: 'bbc', label: 'BBC' },
+        { value: 'guardian', label: 'The Guardian' },
+        { value: 'nyt', label: 'New York Times' },
+        { value: 'bloomberg', label: 'Bloomberg' }
+    ]
+    }
+};
+
+function showCategoryOptions() {
+    const category = document.getElementById('category').value;
+    // Show region only for categories that support it
+    const regionGroup = document.getElementById('region-group');
+    if (category === 'higher_ed' || category === 'entertainment' || category === 'sports' || category === 'tech' || category === 'business_and_finance' || category === 'general' || category === 'environment' || category === 'industry' || category === 'health') {
+        regionGroup.style.display = 'block';
+    } else {
+        regionGroup.style.display = 'none';
+    }
+    // Default region to India if not selected
+    let region = document.querySelector('input[name="region"]:checked');
+    if (!region) {
+        document.querySelector('input[name="region"][value="India"]').checked = true;
+        region = document.querySelector('input[name="region"]:checked');
+    }
+    showSources();
+}
+
+function showSources() {
+    const category = document.getElementById('category').value;
+    let region = document.querySelector('input[name="region"]:checked');
+    region = region ? region.value : 'India';
+    // Hide/show sources sections
+    document.getElementById('india-sources').style.display = (region === 'India') ? 'block' : 'none';
+    document.getElementById('global-sources').style.display = (region === 'Global') ? 'block' : 'none';
+    // Fill checkboxes
+    const indiaBox = document.getElementById('india-sources-checkboxes');
+    const globalBox = document.getElementById('global-sources-checkboxes');
+    indiaBox.innerHTML = '';
+    globalBox.innerHTML = '';
+    if (sources[category] && sources[category]['India']) {
+        sources[category]['India'].forEach(src => {
+            indiaBox.innerHTML += `<label><input type="checkbox" name="sources" value="${src.value}" checked> ${src.label}</label>`;
+        });
+    }
+    if (sources[category] && sources[category]['Global']) {
+        sources[category]['Global'].forEach(src => {
+            globalBox.innerHTML += `<label><input type="checkbox" name="sources" value="${src.value}" checked> ${src.label}</label>`;
+        });
+    }
+}
+window.onload = function() {
+    showCategoryOptions();
+};
+</script>
+
+</body>
+</html>
