@@ -45,7 +45,12 @@ def select_top_news_with_gemini(articles, top_n=10, return_scores=False):
         prompt += f"{idx}. {source}, {title}\n{url}\n"
 
     print("[Gemini] Calling Gemini LLM API...")
-    response = llm.invoke([HumanMessage(content=prompt)])
+    try:
+        response = llm.invoke([HumanMessage(content=prompt)])
+    except Exception as e:
+        print(f"[Gemini] API call failed: {e}")
+        # Return a fallback: top N articles by default
+        return articles[:top_n] if not return_scores else [(art, None) for art in articles[:top_n]]
     print("[Gemini] Gemini LLM API call completed.")
     print("Gemini raw output:\n", response.content)
 
