@@ -22,10 +22,10 @@ def scrape_india_today_entertainment_india():
             if title and href and title not in seen_titles:
                 if href.startswith('/'):
                     href = "https://www.indiatoday.in" + href
-                
+
                 articles.append({"title": title, "url": href, "source": "India Today"})
                 seen_titles.add(title)
-                
+
         return articles
     except Exception as e:
         print(f"Error scraping India Today Entertainment: {e}")
@@ -44,12 +44,12 @@ def scrape_financial_express_entertainment_india():
         for item in soup.select('div.entry-wrapper'):
             title_tag = item.find('h2', class_='entry-title')
             summary_tag = item.find('div', class_='post-excerpt')
-            
+
             if not title_tag or not title_tag.find('a'):
                 continue
-                
+
             href = title_tag.find('a')['href']
-            
+
             # Use summary as title if available, otherwise use the main title
             if summary_tag and summary_tag.find('p'):
                 title = clean_title(summary_tag.p.get_text())
@@ -80,7 +80,7 @@ def scrape_ndtv_entertainment_india():
             a_tag = item.find('a', class_='SrchLstPg_ttl')
             if not a_tag:
                 continue
-                
+
             title = clean_title(a_tag.get_text())
             href = a_tag.get('href', '')
 
@@ -115,7 +115,7 @@ def scrape_deccan_herald_entertainment_india():
             if title and href and title not in seen_titles:
                 if href.startswith('/'):
                     href = "https://www.deccanherald.com" + href
-                
+
                 articles.append({"title": title, "url": href, "source": "Deccan Herald"})
                 seen_titles.add(title)
 
@@ -197,7 +197,7 @@ def scrape_the_hindu_entertainment_india():
     articles = []
     seen_titles = set()
     session = get_session()
-    
+
     try:
         for page in range(1, 5):
             url = f"https://www.thehindu.com/entertainment/?page={page}"
@@ -281,9 +281,8 @@ def scrape_entertainment_news(region="India", sources=None):
     Scrapes entertainment news from various sources based on the selected region.
     """
     all_articles = []
-    
+
     india_source_map = {
-        "india_today_entertainment": scrape_india_today_entertainment_india,
         "financial_express_entertainment": scrape_financial_express_entertainment_india,
         "ndtv_entertainment": scrape_ndtv_entertainment_india,
         "deccan_herald_entertainment": scrape_deccan_herald_entertainment_india,
@@ -292,7 +291,7 @@ def scrape_entertainment_news(region="India", sources=None):
         "indian_express_entertainment": scrape_indian_express_entertainment_india,
         "the_hindu_entertainment": scrape_the_hindu_entertainment_india,
     }
-    
+
     global_source_map = {
         "bbc_entertainment": scrape_bbc_entertainment_global,
         "guardian_film": scrape_guardian_film_global,
@@ -324,7 +323,6 @@ def scrape_entertainment_news(region="India", sources=None):
 if __name__ == "__main__":
     print("\n--- Testing Indian Entertainment Sources ---\n")
     india_source_map = {
-        "india_today_entertainment": scrape_india_today_entertainment_india,
         "financial_express_entertainment": scrape_financial_express_entertainment_india,
         "ndtv_entertainment": scrape_ndtv_entertainment_india,
         "deccan_herald_entertainment": scrape_deccan_herald_entertainment_india,
@@ -352,4 +350,4 @@ if __name__ == "__main__":
         articles = func()
         for art in articles:
             print(f"- {art['title']} ({art['url']})")
-        print(f"Total: {len(articles)} articles\n") 
+        print(f"Total: {len(articles)} articles\n")
