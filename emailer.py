@@ -34,8 +34,9 @@ def clean_title(title):
     title = unicodedata.normalize('NFKD', title)
     title = title.encode('ascii', 'ignore').decode('ascii')
     
-    # Clean whitespace
-    title = re.sub(r'\s+', ' ', title.strip())
+    # Clean whitespace more carefully - preserve single spaces between words
+    # Replace multiple spaces with single space, but don't remove spaces between words
+    title = re.sub(r' +', ' ', title.strip())
     
     if len(title) < 10 or len(title) > 200:
         return None
