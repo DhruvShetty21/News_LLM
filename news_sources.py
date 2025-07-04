@@ -636,88 +636,58 @@ def scrape_india_today_education():
 
 def scrape_news(region, sources=None):
     articles = []
-    
     errors = []
-    if not sources:
-        print(f"Scraping news for region: {region}")
+    
+    # Define source maps like other category files
+    india_source_map = {
+        "flipboard": lambda: scrape_flipboard(region),
+        "scoopit": lambda: scrape_scoopit(region),
+        "hindustan_times": scrape_hindustan_times,
+        "times_of_india": scrape_times_of_india,
+        "indian_express": scrape_indian_express_education,
+        "the_hindu": scrape_the_hindu_education,
+        "deccan_herald": scrape_deccan_herald_education,
+        "ndtv": scrape_ndtv_education,
+        "financial_express": scrape_financial_express_education,
+        "india_today": scrape_india_today_education,
+    }
+    
+    global_source_map = {
+        "flipboard": lambda: scrape_flipboard(region),
+        "scoopit": lambda: scrape_scoopit(region),
+        "bbc": scrape_bbc_education,
+        "guardian": scrape_guardian_education,
+        "nytimes": scrape_nytimes_education,
+        "washington_post": scrape_washington_post_education,
+        "telegraph": scrape_telegraph_education,
+        "times_higher_education": scrape_times_higher_education,
+        "inside_higher_ed": scrape_inside_higher_ed,
+        "edweek": scrape_edweek,
+        "chronicle": scrape_chronicle,
+    }
 
-        # Primary sources (scrape more from these)
-        flipboard = scrape_flipboard(region)
-        print(f"Flipboard articles: {len(flipboard)}")
-        articles.extend(flipboard)
-        time.sleep(2)
+    if region == "India":
+        source_map = india_source_map
+    else:
+        source_map = global_source_map
 
-        scoopit = scrape_scoopit(region)
-        print(f"Scoop.it articles: {len(scoopit)}")
-        articles.extend(scoopit)
-        time.sleep(2)
+    if sources is None:
+        sources = list(source_map.keys())
 
-        # Secondary sources (scrape fewer from these)
-        if region == "India":
-            default_sources = [
-                scrape_hindustan_times,
-                scrape_times_of_india,
-                scrape_indian_express_education,
-                scrape_the_hindu_education,
-                scrape_deccan_herald_education,
-                scrape_ndtv_education,
-                scrape_financial_express_education,
-                scrape_india_today_education  # <-- Added India Today here
-            ]
-        else:
-            default_sources = [
-                scrape_bbc_education,
-                scrape_guardian_education,
-                scrape_nytimes_education,
-                scrape_washington_post_education,
-                scrape_telegraph_education,
-                scrape_times_higher_education,
-                scrape_inside_higher_ed,
-                scrape_edweek,
-                scrape_chronicle
-            ]
-
-        for source in default_sources:
+    print(f"Scraping selected sources: {sources} for region: {region}")
+    
+    for src in sources:
+        func = source_map.get(src)
+        if func:
             try:
-                source_articles = source()
-                articles.extend(source_articles)
+                src_articles = func()
+                print(f"General Education ({region} - {src}): {len(src_articles)} articles")
+                articles.extend(src_articles)
                 time.sleep(2)
             except Exception as e:
-                error_msg = f"Error scraping {source.__name__}: {e}"
+                error_msg = f"Error scraping {src}: {e}"
                 print(error_msg)
                 errors.append(error_msg)
-    else:
-        source_map = {
-            # "google_news": scrape_google_news,  # REMOVED
-            "flipboard": lambda: scrape_flipboard(region),
-            "scoopit": lambda: scrape_scoopit(region),
-            "hindustan_times": scrape_hindustan_times,
-            "times_of_india": scrape_times_of_india,
-            "indian_express": scrape_indian_express_education,
-            "the_hindu": scrape_the_hindu_education,
-            "deccan_herald": scrape_deccan_herald_education,
-            "ndtv": scrape_ndtv_education,
-            "financial_express": scrape_financial_express_education,
-            "india_today": scrape_india_today_education,  # <-- Added India Today here
-            "bbc": scrape_bbc_education,
-            "guardian": scrape_guardian_education,
-            "nytimes": scrape_nytimes_education,
-            "washington_post": scrape_washington_post_education,
-            "telegraph": scrape_telegraph_education,
-            "times_higher_education": scrape_times_higher_education,
-            "inside_higher_ed": scrape_inside_higher_ed,
-            "edweek": scrape_edweek,
-            "chronicle": scrape_chronicle,
-       }
-        for src in sources:
-            func = source_map.get(src)
-            if func:
-                try:
-                    articles.extend(func())
-                except Exception as e:
-                    error_msg = f"Error scraping {src}: {e}"
-                    print(error_msg)
-                    errors.append(error_msg)
 
 
     # Enhanced duplicate removal

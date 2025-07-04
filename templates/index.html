@@ -251,14 +251,18 @@ function showSources() {
     const category = document.getElementById('category').value;
     let region = document.querySelector('input[name="region"]:checked');
     region = region ? region.value : 'India';
+    
     // Hide/show sources sections
     document.getElementById('india-sources').style.display = (region === 'India') ? 'block' : 'none';
     document.getElementById('global-sources').style.display = (region === 'Global') ? 'block' : 'none';
+    
     // Fill checkboxes
     const indiaBox = document.getElementById('india-sources-checkboxes');
     const globalBox = document.getElementById('global-sources-checkboxes');
     indiaBox.innerHTML = '';
     globalBox.innerHTML = '';
+    
+    // Handle sources for the selected category and region
     if (sources[category] && sources[category]['India']) {
         sources[category]['India'].forEach(src => {
             indiaBox.innerHTML += `<label><input type="checkbox" name="sources" value="${src.value}" checked> ${src.label}</label>`;
@@ -268,6 +272,12 @@ function showSources() {
         sources[category]['Global'].forEach(src => {
             globalBox.innerHTML += `<label><input type="checkbox" name="sources" value="${src.value}" checked> ${src.label}</label>`;
         });
+    }
+    
+    // If no sources found for this category, hide the source selection
+    if (!sources[category]) {
+        document.getElementById('india-sources').style.display = 'none';
+        document.getElementById('global-sources').style.display = 'none';
     }
 }
 window.onload = function() {
