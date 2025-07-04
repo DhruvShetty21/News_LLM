@@ -184,9 +184,14 @@ def process_and_send(emails, category, region, top_n=10, sources=None):
             msg += "\n\n\u26a0\ufe0f Some sources failed to scrape:\n" + "\n".join(errors)
         return msg
 
-    print(f"Calling select_top_news_with_gemini with {len(articles)} articles.")
-    top_articles = select_top_news_with_gemini(articles, top_n=top_n)
-    print(f"Gemini selection complete. {len(top_articles)} articles selected.")
+    # NEW: If user asks for N news and total scraped < N, return all scraped news
+    if len(articles) <= top_n:
+        print(f"[process_and_send] Fewer articles ({len(articles)}) than requested ({top_n}). Returning all scraped articles.")
+        top_articles = articles
+    else:
+        print(f"Calling select_top_news_with_gemini with {len(articles)} articles.")
+        top_articles = select_top_news_with_gemini(articles, top_n=top_n)
+        print(f"Gemini selection complete. {len(top_articles)} articles selected.")
 
     email_body = format_email(top_articles)
     html_body = build_html_email(top_articles, topic=topic)
