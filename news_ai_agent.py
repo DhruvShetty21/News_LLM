@@ -54,11 +54,17 @@ def select_top_news_with_gemini(articles, top_n=10, return_scores=False):
     print("[Gemini] Gemini LLM API call completed.")
     print("Gemini raw output:\n", response.content)
 
-    def normalize_url(url):
-        return url.strip().split('?')[0].rstrip('/').lower()
-
-    # Build a lookup for fast matching
-    url_to_article = {normalize_url(art["url"]): art for art in articles}
+    # Source mapping for equivalence
+    def normalize_source_name(name):
+        mapping = {
+            "toi": "times of india",
+            "times of india": "times of india",
+            "TOI": "times of india",
+            "financial express": "financial express",
+            "Financial Express": "financial express",
+            # Add more mappings as needed
+        }
+        return mapping.get(name.strip().lower(), name.strip().lower())
 
     lines = str(response.content).split("\n")
     scored_articles = []
@@ -66,16 +72,22 @@ def select_top_news_with_gemini(articles, top_n=10, return_scores=False):
     while i < len(lines):
         line = lines[i].strip()
         if line and "," in line and line[0].isdigit() and "." in line:
-            # source_headline = line.split(".", 1)[1].strip()  # Not needed anymore
+            source_headline = line.split(".", 1)[1].strip()
             url = lines[i + 1].strip() if i + 1 < len(lines) else ""
             score_line = lines[i + 2].strip() if i + 2 < len(lines) else ""
             score_match = re.search(r"Score:\s*(\d+)", score_line)
             score = int(score_match.group(1)) if score_match else 0
-            norm_url = normalize_url(url)
-            if norm_url in url_to_article:
-                scored_articles.append((url_to_article[norm_url], score))
+            # Extract source from Gemini output
+            if "," in source_headline:
+                gemini_source = source_headline.split(",", 1)[0].strip()
             else:
-                print(f"[Gemini] Warning: URL not matched: {url}")
+                gemini_source = ""
+            norm_gemini_source = normalize_source_name(gemini_source)
+            for art in articles:
+                norm_art_source = normalize_source_name(art.get("source", ""))
+                if norm_art_source == norm_gemini_source and art["title"] in source_headline and art["url"] in url:
+                    scored_articles.append((art, score))
+                    break
             i += 3
         else:
             i += 1
