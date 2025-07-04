@@ -132,17 +132,41 @@ def scrape_guardian_industry():
     session = requests.Session()
     session.headers.update({"User-Agent": "Mozilla/5.0"})
     try:
-        url = "https://www.theguardian.com/business/industry"
+        # Updated URL to the manufacturing sector page
+        url = "https://www.theguardian.com/business/manufacturing-sector"
         response = session.get(url, timeout=15)
         soup = BeautifulSoup(response.content, "html.parser")
-        for a_tag in soup.find_all('a', attrs={"aria-label": True}, href=True):
-            title = clean_text(a_tag['aria-label'])
-            href = a_tag['href']
-            if not href.startswith('http'):
-                href = "https://www.theguardian.com" + href
-            if title and title not in seen_titles:
+        
+        # Primary selector: Look for articles with aria-label and dcr-2yd10d class
+        for a_tag in soup.select('a.dcr-2yd10d[aria-label]'):
+            title = clean_text(a_tag.get('aria-label', ''))
+            href = a_tag.get('href', '')
+            
+            if title and href and title not in seen_titles:
+                if href.startswith('/'):
+                    href = "https://www.theguardian.com" + href
+                elif not href.startswith('http'):
+                    continue
+                    
                 articles.append({"title": title, "url": href, "source": "The Guardian"})
                 seen_titles.add(title)
+        
+        # Fallback selector: General aria-label links
+        if not articles:
+            for a_tag in soup.select('a[aria-label]'):
+                title = clean_text(a_tag.get('aria-label', ''))
+                href = a_tag.get('href', '')
+                
+                if title and href and '/business/' in href and title not in seen_titles:
+                    if href.startswith('/'):
+                        href = "https://www.theguardian.com" + href
+                    elif not href.startswith('http'):
+                        continue
+                        
+                    articles.append({"title": title, "url": href, "source": "The Guardian"})
+                    seen_titles.add(title)
+        
+        print(f"Guardian Industry scraper found {len(articles)} articles")
         return articles
     except Exception as e:
         print(f"Error scraping Guardian Industry: {e}")
