@@ -55,30 +55,39 @@ def scrape_hindustan_times_tech():
         print(f"Found {len(divs)} article blocks")
 
         for div in divs:
+            if not isinstance(div, Tag):
+                continue
+
             a_tag = div.find('a', class_="storyLink")
             if not isinstance(a_tag, Tag):
                 continue
-            href = a_tag.get("href")
-            title = div.get("data-vars-story-title") or a_tag.get_text(strip=True)
 
-            if not title or not isinstance(href, str):
+            href = a_tag.get("href")
+            title = div.get("data-vars-story-title") or a_tag.get_text().strip()
+
+            if not isinstance(title, str) or not title:
                 continue
 
-            if not any(kw in str(title).lower() for kw in technology_keywords):
+            if not any(kw in title.lower() for kw in technology_keywords):
                 continue
 
             if title not in seen_titles:
-                if href.startswith("/"):
+                if isinstance(href, str) and href.startswith("/"):
                     href = "https://www.hindustantimes.com" + href
-                articles.append({"title": title, "url": href, "source": "Hindustan Times"})
+                elif not isinstance(href, str):
+                    continue
+                articles.append({
+                    "title": title,
+                    "url": href,
+                    "source": "Hindustan Times"
+                })
                 seen_titles.add(title)
-        print(f"scrape_hindustan_times_tech: {len(articles)} articles")
+
         return articles
 
     except Exception as e:
         print(f"Error: {e}")
         return []
-
 
 def scrape_financial_express_tech():
     url = "https://www.financialexpress.com/about/technology-news/"
