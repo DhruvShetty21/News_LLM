@@ -36,6 +36,7 @@ def select_top_news_with_gemini(articles, top_n=10, return_scores=False):
         "Return your answer as a numbered list in this format:\n"
         "<SOURCE>, <HEADLINE>\n<LINK>\nScore: <score>\n\n"
         "Here is the list:\n"
+        "IMPORTANT: When returning your answer, DO NOT alter, paraphrase, or rephrase the news titles in any way. Always copy and paste the exact title as provided."
     )
 
     for idx, article in enumerate(articles, 1):
@@ -85,7 +86,7 @@ def select_top_news_with_gemini(articles, top_n=10, return_scores=False):
             norm_gemini_source = normalize_source_name(gemini_source)
             for art in articles:
                 norm_art_source = normalize_source_name(art.get("source", ""))
-                if norm_art_source == norm_gemini_source and art["title"] in source_headline and art["url"] in url:
+                if norm_art_source == norm_gemini_source and art["title"] in source_headline:
                     scored_articles.append((art, score))
                     break
             i += 3
