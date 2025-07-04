@@ -351,7 +351,7 @@ def scrape_health_news(region="India", sources=None):
 
     india_source_map = {
         "hindustan_times": scrape_hindustan_times_health,
-        "ndtv": scrape_times_now_health,
+        "times_now": scrape_times_now_health,
         "deccan_herald": scrape_times_of_india_health,
         "indian_express": indian_express_health,
     }
