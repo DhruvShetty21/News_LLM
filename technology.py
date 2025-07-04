@@ -1,24 +1,28 @@
 import requests
-from bs4 import BeautifulSoup
-import time
+from bs4 import BeautifulSoup, Tag
 from time import sleep
+from typing import cast
 
 
 def clean_text(text):
     return ' '.join(text.strip().split())
+
 
 def get_session():
     session = requests.Session()
     session.headers.update({"User-Agent": "Mozilla/5.0"})
     return session
 
+
 def clean_title(text):
     return clean_text(text.replace("\n", " ").replace("\xa0", " "))
+
 
 def ensure_absolute(url: str) -> str:
     if url.startswith(('http://', 'https://')):
         return url
     return f"https://www.euronews.com/{url.lstrip('/')}"
+
 
 technology_keywords = [
     "technology", "tech", "ai", "artificial intelligence", "machine learning", "deep learning",
@@ -28,87 +32,53 @@ technology_keywords = [
     "meta", "google", "microsoft", "apple", "openai", "chatgpt", "elon", "tesla", "neuralink"
 ]
 
-# --- INDIA SOURCES ---
 
+# --- INDIA SOURCES ---
 def scrape_hindustan_times_tech():
     try:
-        session = get_session()
         url = "https://www.hindustantimes.com/technology"
-        response = session.get(url, timeout=15)
-        soup = BeautifulSoup(response.content, "html.parser")
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                          "AppleWebKit/537.36 (KHTML, like Gecko) "
+                          "Chrome/114.0.0.0 Safari/537.36"
+        }
+
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+
+        soup = BeautifulSoup(response.text, "html.parser")
+
         articles = []
         seen_titles = set()
-        divs = soup.select('div.cartHolder.listView')
+
+        divs = soup.select('div.cartHolder')
+        print(f"Found {len(divs)} article blocks")
+
         for div in divs:
-            a_tag = div.select_one('h3.hdg3 a')
-            if not a_tag:
+            a_tag = div.find('a', class_="storyLink")
+            if not isinstance(a_tag, Tag):
                 continue
-            title = clean_title(a_tag.get_text())
-            href = a_tag.get('href', '')
-            if not any(kw in title.lower() for kw in technology_keywords):
+            href = a_tag.get("href")
+            title = div.get("data-vars-story-title") or a_tag.get_text(strip=True)
+
+            if not title or not isinstance(href, str):
                 continue
-            if title and title not in seen_titles and href:
-                if href.startswith('/'):
+
+            if not any(kw in str(title).lower() for kw in technology_keywords):
+                continue
+
+            if title not in seen_titles:
+                if href.startswith("/"):
                     href = "https://www.hindustantimes.com" + href
                 articles.append({"title": title, "url": href, "source": "Hindustan Times"})
                 seen_titles.add(title)
+        print(f"scrape_hindustan_times_tech: {len(articles)} articles")
         return articles
+
     except Exception as e:
-        print(f"Error scraping Hindustan Times: {e}")
+        print(f"Error: {e}")
         return []
 
-def scrape_ndtv_tech():
-    try:
-        session = get_session()
-        url = "https://www.ndtv.com/technology"
-        response = session.get(url, timeout=15)
-        soup = BeautifulSoup(response.content, "html.parser")
-        articles = []
-        seen_titles = set()
-        for tag in soup.select('.newsHdng a, .SrchLstPg_ttl-lnk a, h2 a, h3 a'):
-            title = clean_title(tag.get_text())
-            href = tag.get('href', '')
-            if not any(kw in title.lower() for kw in technology_keywords):
-                continue
-            if title and title not in seen_titles and href:
-                if href.startswith('/'):
-                    href = "https://www.ndtv.com" + href
-                articles.append({"title": title, "url": href, "source": "NDTV"})
-                seen_titles.add(title)
-        return articles
-    except Exception as e:
-        print(f"Error scraping NDTV: {e}")
-        return []
-
-def scrape_deccan_herald_tech():
-    try:
-        session = get_session()
-        url = "https://www.deccanherald.com/sci-tech/technology"
-        response = session.get(url, timeout=15)
-        soup = BeautifulSoup(response.content, "html.parser")
-        articles = []
-        seen_titles = set()
-        # Find all story cards in the technology section
-        for story_card in soup.find_all('div', class_='story-card-15'):
-            h2 = story_card.find('h2', class_='headline')
-            if not h2:
-                continue
-            a_tag = h2.find('a', href=True)
-            if not a_tag:
-                continue
-            title = clean_title(a_tag.text)
-            if not any(kw in title.lower() for kw in technology_keywords):
-                continue
-            href = a_tag['href']
-            if href.startswith('/'):
-                href = "https://www.deccanherald.com" + href
-            if title not in seen_titles:
-                articles.append({"title": title, "url": href, "source": "Deccan Herald"})
-                seen_titles.add(title)
-        return articles
-    except Exception as e:
-        print(f"Error scraping Deccan Herald: {e}")
-        return []
 
 def scrape_financial_express_tech():
     url = "https://www.financialexpress.com/about/technology-news/"
@@ -119,21 +89,25 @@ def scrape_financial_express_tech():
         articles = []
         seen_titles = set()
         for article in soup.find_all("article"):
-            title_tag = article.find("div", class_="entry-title")
-            if not title_tag:
+            title_tag = cast(Tag, article).find("div", class_="entry-title")
+            if not isinstance(title_tag, Tag):
                 continue
-            a_tag = title_tag.find("a", href=True)
-            if not a_tag:
+            a_tag = title_tag.find("a")
+            if not isinstance(a_tag, Tag):
                 continue
             title = clean_text(a_tag.text)
-            href = a_tag["href"]
-            if title and title not in seen_titles:
+            href = a_tag.get("href")
+            if not title or not isinstance(href, str):
+                continue
+            if title not in seen_titles:
                 articles.append({"title": title, "url": href, "source": "Financial Express"})
                 seen_titles.add(title)
+        print(f"scrape_financial_express_tech: {len(articles)} articles")
         return articles
     except Exception as e:
         print(f"Error scraping Financial Express: {e}")
         return []
+
 
 def scrape_indian_express_tech():
     try:
@@ -144,8 +118,12 @@ def scrape_indian_express_tech():
         articles = []
         seen_titles = set()
         for tag in soup.select('h3 a, h2 a'):
+            if not isinstance(tag, Tag):
+                continue
             title = clean_title(tag.get_text())
-            href = tag.get('href', '')
+            href = tag.get("href")
+            if not isinstance(href, str):
+                continue
             if not any(kw in title.lower() for kw in technology_keywords):
                 continue
             if title and title not in seen_titles:
@@ -153,13 +131,14 @@ def scrape_indian_express_tech():
                     href = "https://indianexpress.com" + href
                 articles.append({"title": title, "url": href, "source": "Indian Express"})
                 seen_titles.add(title)
+        print(f"scrape_indian_express_tech: {len(articles)} articles")
         return articles
     except Exception as e:
         print(f"Error scraping Indian Express: {e}")
         return []
 
-# --- GLOBAL SOURCES ---
 
+# --- GLOBAL SOURCES ---
 def scrape_guardian_tech():
     try:
         url = "https://www.theguardian.com/technology"
@@ -167,43 +146,57 @@ def scrape_guardian_tech():
         soup = BeautifulSoup(response.content, "html.parser")
         articles = []
         seen_titles = set()
+
         for tag in soup.select('a[aria-label]'):
-            title = clean_title(tag.get('aria-label'))
-            href = tag.get('href', '')
+            if not isinstance(tag, Tag):
+                continue
+            title = clean_title(tag.get('aria-label') or '')
+            href = tag.get('href')
+            if not title or not isinstance(href, str):
+                continue
+            if href.startswith('/'):
+                href = "https://www.theguardian.com" + href
             if not any(kw in title.lower() for kw in technology_keywords):
                 continue
-            if title and href and '/202' in href and title not in seen_titles:
+            if '/202' in href and title not in seen_titles:
                 articles.append({"title": title, "url": href, "source": "The Guardian"})
                 seen_titles.add(title)
+        print(f"scrape_guardian_tech: {len(articles)} articles")
         return articles
     except Exception as e:
         print(f"Error scraping Guardian Tech: {e}")
         return []
 
-def scrape_euronews(query="technology", max_pages=3, delay=0.3):
-    api_url = "https://www.euronews.com/api/search"
+
+def scrape_euronews(query="technology", max_pages=1, delay=0.5):
+    base_url = "https://www.euronews.com/search"
     headers = {"User-Agent": "Mozilla/5.0"}
     articles = []
+
     for page in range(1, max_pages + 1):
-        print(f"🔎 Scraping Euronews page {page}...")
-        params = {"query": query, "page": page, "size": 10}
+        print(f"🔎 Scraping page {page}...")
+        params = {"query": query, "p": page}
         try:
-            res = requests.get(api_url, headers=headers, params=params, timeout=15)
+            res = requests.get(base_url, headers=headers, params=params, timeout=15)
             res.raise_for_status()
-            results = res.json()
-            if not isinstance(results, list) or not results:
-                print("🛑 No more results.")
-                break
         except Exception as exc:
-            print(f"❌ Page {page} failed: {exc}")
+            print(f"❌ Request failed on page {page}: {exc}")
             break
-        for item in results:
-            title = clean_text(item.get("title", ""))
-            url = ensure_absolute(item.get("url", ""))
-            if title and url:
+
+        soup = BeautifulSoup(res.text, "html.parser")
+        for a in soup.select("article a.the-media-object__link"):
+            if not isinstance(a, Tag):
+                continue
+            url = a.get("href")
+            title = a.get("aria-label") or a.get_text(strip=True)
+            if isinstance(url, str) and title:
+                if not url.startswith("http"):
+                    url = "https://www.euronews.com" + url
                 articles.append({"title": title, "url": url, "source": "Euronews"})
         sleep(delay)
+    print(f"scrape_euronews: {len(articles)} articles")
     return articles
+
 
 def scrape_cnbc_tech():
     url = "https://www.cnbc.com/technology/"
@@ -216,26 +209,30 @@ def scrape_cnbc_tech():
         seen_titles = set()
         cards = soup.find_all("div", attrs={"data-test": "Card"})
         for card in cards:
+            if not isinstance(card, Tag):
+                continue
             title_tag = card.find("a", class_="Card-title")
-            if title_tag and title_tag.text and title_tag['href']:
-                title = clean_text(title_tag.text)
-                href = title_tag['href']
-                if title not in seen_titles:
-                    articles.append({"title": title, "url": href, "source": "CNBC"})
-                    seen_titles.add(title)
+            if not isinstance(title_tag, Tag):
+                continue
+            title = clean_text(title_tag.text)
+            href = title_tag.get("href")
+            if title and isinstance(href, str) and title not in seen_titles:
+                articles.append({"title": title, "url": href, "source": "CNBC"})
+                seen_titles.add(title)
+        print(f"scrape_cnbc_tech: {len(articles)} articles")
         return articles
     except Exception as e:
         print(f"Error scraping CNBC: {e}")
         return []
 
-# --- WRAPPER FUNCTIONS ---
 
+# --- WRAPPER FUNCTIONS ---
 def scrape_india_tech_news():
     all_articles = []
     print("\n--- Scraping India Technology News ---")
     for src_func in [
-        scrape_hindustan_times_tech, scrape_ndtv_tech,
-        scrape_deccan_herald_tech, scrape_financial_express_tech,
+        scrape_hindustan_times_tech,
+        scrape_financial_express_tech,
         scrape_indian_express_tech
     ]:
         try:
@@ -246,6 +243,7 @@ def scrape_india_tech_news():
         except Exception as e:
             print(f"Error during Indian scraping: {e}")
     return all_articles
+
 
 def scrape_global_tech_news():
     all_articles = []
@@ -260,11 +258,10 @@ def scrape_global_tech_news():
             print(f"Error during Global scraping: {e}")
     return all_articles
 
+
 def scrape_technology_news(region="India", sources=None):
     india_source_map = {
         "hindustan_times": scrape_hindustan_times_tech,
-        "ndtv": scrape_ndtv_tech,
-        "deccan_herald": scrape_deccan_herald_tech,
         "financial_express": scrape_financial_express_tech,
         "indian_express": scrape_indian_express_tech,
     }
@@ -273,10 +270,7 @@ def scrape_technology_news(region="India", sources=None):
         "euronews": scrape_euronews,
         "cnbc": scrape_cnbc_tech,
     }
-    if region == "India":
-        source_map = india_source_map
-    else:
-        source_map = global_source_map
+    source_map = india_source_map if region == "India" else global_source_map
     if sources is None:
         sources = list(source_map.keys())
     all_articles = []
@@ -284,14 +278,14 @@ def scrape_technology_news(region="India", sources=None):
         func = source_map.get(src)
         if func:
             try:
-                src_articles = func() if src != "euronews" else func()  # euronews takes default query
+                src_articles = func()
                 all_articles.extend(src_articles)
             except Exception as e:
                 print(f"Error in scrape_technology_news for source {src}: {e}")
     return all_articles
 
-# --- MAIN ---
 
+# --- MAIN ---
 if __name__ == "__main__":
     india_articles = scrape_india_tech_news()
     print(f"\n✅ Total Indian tech articles: {len(india_articles)}\n")

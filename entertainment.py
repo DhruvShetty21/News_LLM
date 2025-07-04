@@ -25,6 +25,7 @@ def scrape_india_today_entertainment_india():
 
                 articles.append({"title": title, "url": href, "source": "India Today"})
                 seen_titles.add(title)
+        print(f"scrape_india_today_entertainment_india: {len(articles)} articles")
 
         return articles
     except Exception as e:
@@ -60,7 +61,7 @@ def scrape_financial_express_entertainment_india():
                 # URLs are absolute
                 articles.append({"title": title, "url": href, "source": "Financial Express"})
                 seen_titles.add(title)
-
+        print(f"scrape_financial_express_entertainment_india: {len(articles)} articles")
         return articles
     except Exception as e:
         print(f"Error scraping Financial Express Entertainment: {e}")
@@ -88,7 +89,7 @@ def scrape_ndtv_entertainment_india():
                 # URLs are already absolute
                 articles.append({"title": title, "url": href, "source": "NDTV"})
                 seen_titles.add(title)
-
+        print(f"scrape_ndtv_entertainment_india: {len(articles)} articles")
         return articles
     except Exception as e:
         print(f"Error scraping NDTV Entertainment: {e}")
@@ -118,7 +119,7 @@ def scrape_deccan_herald_entertainment_india():
 
                 articles.append({"title": title, "url": href, "source": "Deccan Herald"})
                 seen_titles.add(title)
-
+        print(f"scrape_deccan_herald_entertainment_india: {len(articles)} articles")
         return articles
     except Exception as e:
         print(f"Error scraping Deccan Herald Entertainment: {e}")
@@ -142,6 +143,7 @@ def scrape_hindustan_times_entertainment_india():
                     href = "https://www.hindustantimes.com" + href
                 articles.append({"title": title, "url": href, "source": "Hindustan Times"})
                 seen_titles.add(title)
+        print(f"scrape_hindustan_times_entertainment_india: {len(articles)} articles")
         return articles
     except Exception as e:
         print(f"Error scraping Hindustan Times Entertainment: {e}")
@@ -167,6 +169,7 @@ def scrape_times_of_india_entertainment_india():
                     href = "https://timesofindia.indiatimes.com" + href
                 articles.append({"title": title, "url": href, "source": "Times of India"})
                 seen_titles.add(title)
+        print(f"scrape_times_of_india_entertainment_india: {len(articles)} articles")
         return articles
     except Exception as e:
         print(f"Error scraping Times of India Entertainment: {e}")
@@ -188,6 +191,7 @@ def scrape_indian_express_entertainment_india():
             if title and href and title not in seen_titles:
                 articles.append({"title": title, "url": href, "source": "Indian Express"})
                 seen_titles.add(title)
+        print(f"scrape_indian_express_entertainment_india: {len(articles)} articles")
         return articles
     except Exception as e:
         print(f"Error scraping Indian Express Entertainment: {e}")
@@ -211,6 +215,7 @@ def scrape_the_hindu_entertainment_india():
                 if title and href and title not in seen_titles:
                     articles.append({"title": title, "url": href, "source": "The Hindu"})
                     seen_titles.add(title)
+        print(f"scrape_the_hindu_entertainment_india: {len(articles)} articles")
         return articles
     except Exception as e:
         print(f"Error scraping The Hindu Entertainment: {e}")
@@ -219,12 +224,13 @@ def scrape_the_hindu_entertainment_india():
 # --- Global Entertainment Sources (Placeholders) ---
 
 def scrape_bbc_entertainment_global():
-    print("Scraping BBC Entertainment (Global)...")
+    print("Scraping function missing for BBC Entertainment (Global)")
     # To-do: Add scraping logic here
+    
     return []
 
 def scrape_guardian_film_global():
-    print("Scraping The Guardian Film (Global)...")
+    print("Scraping function missing for The Guardian Film (Global)...")
     # To-do: Add scraping logic here
     return []
 
@@ -246,6 +252,7 @@ def scrape_washington_post_entertainment_global():
             if title and href and title not in seen_titles:
                 articles.append({"title": title, "url": href, "source": "Washington Post"})
                 seen_titles.add(title)
+        print(f"scrape_washington_post_entertainment_global: {len(articles)} articles")
         return articles
     except Exception as e:
         print(f"Error scraping Washington Post Entertainment: {e}")
@@ -271,6 +278,7 @@ def scrape_cnn_entertainment_global():
                     href = 'https://edition.cnn.com' + href
                 articles.append({"title": title, "url": href, "source": "CNN Entertainment"})
                 seen_titles.add(title)
+        print(f"scrape_cnn_entertainment_global: {len(articles)} articles")
         return articles
     except Exception as e:
         print(f"Error scraping CNN Entertainment: {e}")

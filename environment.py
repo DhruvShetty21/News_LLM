@@ -81,6 +81,7 @@ def scrape_indian_express():
             if title and title not in seen_titles:
                 articles.append({"title": title, "url": href, "source": "Indian Express"})
                 seen_titles.add(title)
+        print(f"scrape_indian_express: {len(articles)} articles")
         return articles
     except Exception:
         return []
@@ -105,6 +106,7 @@ def scrape_ndtv():
                     continue
                 articles.append({"title": title, "url": href, "source": "NDTV"})
                 seen_titles.add(title)
+        print(f"scrape_ndtv: {len(articles)} articles")
         return articles
     except Exception:
         return []
@@ -132,6 +134,8 @@ def scrape_hindustan_times():
                 if title and title not in seen_titles:
                     articles.append({"title": title, "url": href, "source": "Hindustan Times"})
                     seen_titles.add(title)
+
+        print(f"scrape_hindustan_times: {len(articles)} articles")
         return articles
     except Exception:
         return []
@@ -156,6 +160,7 @@ def scrape_cnbc():
                 if title not in seen_titles:
                     articles.append({"title": title, "url": href, "source": "CNBC"})
                     seen_titles.add(title)
+        print(f"scrape_cnbc: {len(articles)} articles")
         return articles
     except Exception:
         return []
@@ -180,6 +185,7 @@ def scrape_euronews(query="environment", max_pages=3, delay=0.3):
             if title and url:
                 articles.append({"title": title, "url": url, "source": "Euronews"})
         sleep(delay)
+    print(f"scrape_euronews: {len(articles)} articles")
     return articles
 
 def scrape_guardian():
@@ -197,6 +203,7 @@ def scrape_guardian():
                 full_url = href if href.startswith("http") else "https://www.theguardian.com" + href
                 articles.append({"title": title, "url": full_url, "source": "The Guardian"})
                 seen_titles.add(title)
+        print(f"scrape_guardian: {len(articles)} articles")
         return articles
     except Exception:
         return []

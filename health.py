@@ -19,72 +19,45 @@ def clean_title(text):
     return ' '.join(text.strip().split())
 
 def scrape_hindustan_times_health():
+    articles = []
+    seen_titles = set()
+    session = get_session()
+
     try:
-        session = get_session()
-        url = "https://www.hindustantimes.com/lifestyle/health"
-        response = session.get(url, timeout=15)
-        soup = BeautifulSoup(response.content, "html.parser")
-        articles = []
-        seen_titles = set()
+        # Scraping pages 1 to 4
+        for page in range(1, 5):
+            url = f"https://www.hindustantimes.com/lifestyle/health/page-{page}"
+            response = session.get(url, timeout=15)
+            soup = BeautifulSoup(response.content, "html.parser")
 
-        for div in soup.select("div.cartHolder"):
-            h3_tag = div.find("h3", class_="hdg3")
-            if h3_tag:
-                a_tag = h3_tag.find("a", href=True)
-                if a_tag:
-                    title = clean_title(a_tag.get_text())
-                    href = a_tag['href']
-
-                    if not any(kw in title.lower() for kw in health_keywords):
-                        continue
+            # Select articles based on the updated expected structure
+            for div in soup.select('div.cartHolder.listView.track'):
+                a_tag = div.find("a", class_="storyLink articleClick", href=True)
+                h3_tag = div.find("h3", class_="hdg3")
+                if a_tag and h3_tag:
+                    title = clean_title(h3_tag.get_text())
+                    href = a_tag["href"]
 
                     if href.startswith('/'):
                         href = "https://www.hindustantimes.com" + href
-                    elif not href.startswith('http'):
-                        continue
 
-                    if title and href and title not in seen_titles:
+                    if title and title not in seen_titles:
                         articles.append({
                             "title": title,
                             "url": href,
                             "source": "Hindustan Times"
                         })
                         seen_titles.add(title)
+
+        if not articles:
+            print("No articles found for Hindustan Times in the health section.")
+
+        print(f"scrape_hindustan_times_health: {len(articles)} articles")
         return articles
+
     except Exception as e:
         print(f"Error scraping Hindustan Times Health: {e}")
         return []
-
-def scrape_times_now_health():
-    try:
-        session = get_session()
-        url = "https://www.timesnownews.com/health"
-        response = session.get(url, timeout=15)
-        soup = BeautifulSoup(response.content, "html.parser")
-
-        articles = []
-        seen_titles = set()
-
-        for li in soup.select('li._2LXp'):
-            anchor = li.find('a', href=True)
-            title_tag = li.find('h3')
-            if anchor and title_tag:
-                href = anchor['href']
-                title = clean_title(title_tag.get_text())
-                if title not in seen_titles:
-                    articles.append({
-                        "title": title,
-                        "url": href,
-                        "source": "Times Now"
-                    })
-                    seen_titles.add(title)
-
-        return articles
-
-    except Exception as e:
-        print(f"Error scraping Times Now Health: {e}")
-        return []
-
 def scrape_times_of_india_health():
     try:
         session = get_session()
@@ -109,11 +82,36 @@ def scrape_times_of_india_health():
                         "source": "Times of India"
                     })
                     seen_titles.add(title)
-
+        print(f"scrape_times_of_india_health: {len(articles)} articles")
         return articles
 
     except Exception as e:
         print(f"Error scraping Times of India Health News: {e}")
+        return []
+
+def scrape_times_now_health():
+    articles = []
+    seen_titles = set()
+    session = requests.Session()  # Use session for persistent connections
+    url = "https://www.timesnownews.com/health"  # Base URL for Times Now health news
+    try:
+        response = session.get(url, timeout=15)
+        soup = BeautifulSoup(response.content, "html.parser")
+        # Find articles in the provided HTML structure
+        for item in soup.find_all('li', class_="_2LXp"):
+            a_tag = item.find('a', href=True)
+            if not a_tag:
+                continue
+
+            title = a_tag.find('h3', class_="_3p7u").get_text(strip=True)
+            href = a_tag['href']
+            if title and title not in seen_titles:
+                articles.append({"title": title, "url": href, "source": "Times Now"})
+                seen_titles.add(title)
+        print(f"scrape_times_now_health: {len(articles)} articles")
+        return articles
+    except Exception as e:
+        print(f"Error scraping Times Now health articles: {e}")
         return []
 
 def indian_express_health():
@@ -144,7 +142,7 @@ def indian_express_health():
                     "source": "Indian Express"
                 })
                 seen_titles.add(title)
-
+        print(f"indian_express_health: {len(articles)} articles")
         return articles
 
     except Exception as e:
@@ -184,7 +182,7 @@ def scrape_bbc_health():
                     "source": "BBC"
                 })
                 seen_titles.add(title)
-
+        print(f"scrape_bbc_health: {len(articles)} articles")
         return articles
 
     except Exception as e:
@@ -223,7 +221,7 @@ def scrape_guardian_health():
                     "source": "The Guardian"
                 })
                 seen_titles.add(title)
-
+        print(f"scrape_guardian_health: {len(articles)} articles")
         return articles
 
     except Exception as e:
@@ -279,7 +277,7 @@ def scrape_nytimes_health():
                     "source": "New York Times"
                 })
                 seen_titles.add(title)
-
+        print(f"scrape_nytimes_health: {len(articles)} articles")
         return articles
 
     except Exception as e:
@@ -338,7 +336,7 @@ def scrape_bloomberg_health():
                     "source": "Bloomberg"
                 })
                 seen_titles.add(title)
-
+        print(f"scrape_bloomberg_health: {len(articles)} articles")
         return articles
 
     except Exception as e:

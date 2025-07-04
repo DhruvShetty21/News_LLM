@@ -65,7 +65,7 @@ def scrape_espncricinfo():
                         seen_titles.add(title)
             
             time.sleep(1)  # Be polite to the server
-
+        print(f"scrape_espncricinfo: {len(articles)} articles")
         return articles
     except Exception as e:
         return []
@@ -91,6 +91,7 @@ def scrape_indian_express_sports():
                     articles.append({"title": title, "url": href, "source": "Indian Express"})
                     seen_titles.add(title)
             time.sleep(1)
+            print(f"scrape_indian_express_sports: {len(articles)} articles")
         return articles
     except Exception as e:
         return []
@@ -128,6 +129,8 @@ def scrape_ndtv_sports():
             if title and href and title not in seen_titles:
                 articles.append({"title": title, "url": href, "source": "NDTV Sports"})
                 seen_titles.add(title)
+
+        print(f"scrape_ndtv_sports: {len(articles)} articles")
                 
         return articles
     except Exception as e:
@@ -153,6 +156,7 @@ def scrape_the_hindu_sports():
                         articles.append({"title": title, "url": href, "source": "The Hindu"})
                         seen_titles.add(title)
             time.sleep(1)
+        print(f"scrape_the_hindu_sports: {len(articles)} articles")
         return articles
     except Exception as e:
         return []
@@ -177,7 +181,7 @@ def scrape_espn():
             if title and title not in seen_titles:
                 articles.append({"title": title, "url": href, "source": "ESPN"})
                 seen_titles.add(title)
-
+        print(f"scrape_espn: {len(articles)} articles")
         return articles
     except Exception as e:
         return []
@@ -198,7 +202,7 @@ def scrape_guardian_sports():
             if title and href and "/202" in href and title not in seen_titles:
                 articles.append({"title": title, "url": href, "source": "The Guardian"})
                 seen_titles.add(title)
-
+        print(f"scrape_guardian_sports: {len(articles)} articles")     
         return articles
     except Exception as e:
         return []
@@ -227,6 +231,7 @@ def scrape_bbc_sport():
                 if title and href and title not in seen_titles:
                     articles.append({"title": title, "url": href, "source": "BBC Sport"})
                     seen_titles.add(title)
+        print(f"scrape_bbc_sport: {len(articles)} articles")
         return articles
     except Exception as e:
         return []

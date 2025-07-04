@@ -24,6 +24,7 @@ def scrape_the_hindu_industry():
                 if title and title not in seen_titles:
                     articles.append({"title": title, "url": href, "source": "The Hindu"})
                     seen_titles.add(title)
+        print(f"scrape_the_hindu_industry: {len(articles)} articles")
         return articles
     except Exception as e:
         print(f"Error scraping The Hindu Industry: {e}")
@@ -48,6 +49,7 @@ def scrape_financial_express_industry():
                 if title and title not in seen_titles:
                     articles.append({"title": title, "url": href, "source": "Financial Express"})
                     seen_titles.add(title)
+        print(f"scrape_financial_express_industry: {len(articles)} articles")
         return articles
     except Exception as e:
         print(f"Error scraping Financial Express Industry: {e}")
@@ -68,6 +70,7 @@ def scrape_manufacturing_today_india():
             if title and title not in seen_titles:
                 articles.append({"title": title, "url": href, "source": "Manufacturing Today India"})
                 seen_titles.add(title)
+        print(f"scrape_manufacturing_today_india: {len(articles)} articles")
         return articles
     except Exception as e:
         print(f"Error scraping Manufacturing Today India: {e}")
@@ -96,6 +99,7 @@ def scrape_bbc_industry():
             if title and title not in seen_titles:
                 articles.append({"title": title, "url": href, "source": "BBC"})
                 seen_titles.add(title)
+        print(f"scrape_bbc_industry: {len(articles)} articles")
         return articles
     except Exception as e:
         print(f"Error scraping BBC Industry: {e}")
@@ -121,6 +125,7 @@ def scrape_nytimes_industry():
             if title and title not in seen_titles:
                 articles.append({"title": title, "url": href, "source": "NY Times"})
                 seen_titles.add(title)
+        print(f"scrape_nytimes_industry: {len(articles)} articles")
         return articles
     except Exception as e:
         print(f"Error scraping NY Times Industry: {e}")
@@ -166,7 +171,8 @@ def scrape_guardian_industry():
                     articles.append({"title": title, "url": href, "source": "The Guardian"})
                     seen_titles.add(title)
         
-        print(f"Guardian Industry scraper found {len(articles)} articles")
+        
+        print(f"scrape_guardian_industry: {len(articles)} articles")
         return articles
     except Exception as e:
         print(f"Error scraping Guardian Industry: {e}")
@@ -191,6 +197,7 @@ def scrape_bloomberg_industry():
             if title and title not in seen_titles:
                 articles.append({"title": title, "url": href, "source": "Bloomberg"})
                 seen_titles.add(title)
+        print(f"scrape_bloomberg_industry: {len(articles)} articles")
         return articles
     except Exception as e:
         print(f"Error scraping Bloomberg Industry: {e}")

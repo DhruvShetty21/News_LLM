@@ -8,3 +8,4 @@ gunicorn
 # The following are dependencies of above, but not directly needed:
 # urllib3==2.4.0
 langchain-core
+selenium
