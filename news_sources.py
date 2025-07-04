@@ -161,20 +161,44 @@ def scrape_hindustan_times():
 def scrape_times_of_india():
     try:
         session = get_session()
-        url = "https://timesofindia.indiatimes.com/topic/education"
+        url = "https://timesofindia.indiatimes.com/education"
         response = session.get(url, timeout=15)
         soup = BeautifulSoup(response.content, "html.parser")
         articles = []
-
-        selectors = ['span.w_tle a', '.story-list a', '.list5 a']
-
         seen_titles = set()
-        for selector in selectors:
-            for tag in soup.select(selector):
-                title = clean_title(tag.get_text())
-                href = tag.get('href', '')
 
-                if title and title not in seen_titles and href:
+        # Primary pattern: Articles in div with class "lSIdy col_l_6 col_m_6"
+        # Each div can contain multiple <a> tags with <span> elements
+        for div in soup.select('div.lSIdy.col_l_6.col_m_6'):
+            for a_tag in div.find_all('a', href=True):
+                span_tag = a_tag.find('span')
+                if span_tag:
+                    title = clean_title(span_tag.get_text())
+                    href = a_tag.get('href', '')
+
+                    if title and title not in seen_titles and href:
+                        # Clean URL parameters
+                        href = href.split('?')[0]
+
+                        if href.startswith('/'):
+                            href = "https://timesofindia.indiatimes.com" + href
+                        elif not href.startswith('http'):
+                            continue
+
+                        articles.append({"title": title, "url": href, "source": "Times of India"})
+                        seen_titles.add(title)
+
+        # Secondary pattern: Articles with figcaption and p tags
+        for a_tag in soup.find_all('a', href=True):
+            figcaption = a_tag.find('figcaption')
+
+            if figcaption:
+                title = clean_title(figcaption.get_text())
+                href = a_tag.get('href', '')
+
+                if title and title not in seen_titles and href and 'education' in href:
+                    href = href.split('?')[0]
+
                     if href.startswith('/'):
                         href = "https://timesofindia.indiatimes.com" + href
                     elif not href.startswith('http'):
@@ -183,7 +207,27 @@ def scrape_times_of_india():
                     articles.append({"title": title, "url": href, "source": "Times of India"})
                     seen_titles.add(title)
 
+        # Alternative pattern: Look for general education section links with class "linktype1"
+        for a_tag in soup.select('a.linktype1[href*="education"]'):
+            span_tag = a_tag.find('span')
+            if span_tag:
+                title = clean_title(span_tag.get_text())
+                href = a_tag.get('href', '')
+
+                if title and title not in seen_titles and href:
+                    href = href.split('?')[0]
+
+                    if href.startswith('/'):
+                        href = "https://timesofindia.indiatimes.com" + href
+                    elif not href.startswith('http'):
+                        continue
+
+                    articles.append({"title": title, "url": href, "source": "Times of India"})
+                    seen_titles.add(title)
+
+        print(f"Times of India scraper found {len(articles)} articles")
         return articles
+
     except Exception as e:
         print(f"Error scraping Times of India: {e}")
         return []
@@ -637,7 +681,7 @@ def scrape_india_today_education():
 def scrape_news(region, sources=None):
     articles = []
     errors = []
-    
+
     # Define source maps like other category files
     india_source_map = {
         "flipboard": lambda: scrape_flipboard(region),
@@ -651,7 +695,7 @@ def scrape_news(region, sources=None):
         "financial_express": scrape_financial_express_education,
         "india_today": scrape_india_today_education,
     }
-    
+
     global_source_map = {
         "flipboard": lambda: scrape_flipboard(region),
         "scoopit": lambda: scrape_scoopit(region),
@@ -675,7 +719,7 @@ def scrape_news(region, sources=None):
         sources = list(source_map.keys())
 
     print(f"Scraping selected sources: {sources} for region: {region}")
-    
+
     for src in sources:
         func = source_map.get(src)
         if func:
