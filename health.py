@@ -347,10 +347,11 @@ def scrape_bloomberg_health():
 def scrape_health_news(region="India", sources=None):
     all_articles = []
 
-    india_source_map = {
+   india_source_map = {
         "hindustan_times": scrape_hindustan_times_health,
+        "times_of_india": scrape_times_of_india_health,
         "times_now": scrape_times_now_health,
-        "deccan_herald": scrape_times_of_india_health,
+    
         "indian_express": indian_express_health,
     }
 
