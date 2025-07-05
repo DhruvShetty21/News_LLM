@@ -162,6 +162,7 @@ def scrape_the_hindu_sports():
         return []
 
 def scrape_times_of_india_sports():
+    print("TOI Sports Scraper CALLED")
     try:
         session = requests.Session()
         session.headers.update({"User-Agent": "Mozilla/5.0"})
@@ -170,9 +171,11 @@ def scrape_times_of_india_sports():
         soup = BeautifulSoup(response.content, "html.parser")
         articles = []
         seen_titles = set()
+        MAX_ARTICLES = 50
 
-        # Structure 1: div.vertical_12... with div.iN5CR a.lfn2e > div.WavNE
-        for main_div in soup.select('div.vertical_12.w_1.left_spacing.right_spacing.bottom_v_spacing.b_brdr.brdr_2'):
+        main_divs = soup.select('div.vertical_12.w_1.left_spacing.right_spacing.bottom_v_spacing.b_brdr.brdr_2')
+        print("Found", len(main_divs), "main divs")
+        for main_div in main_divs:
             for in5cr in main_div.select('div.iN5CR'):
                 a_tag = in5cr.find('a', class_='lfn2e', href=True)
                 if a_tag:
@@ -185,9 +188,15 @@ def scrape_times_of_india_sports():
                                 href = "https://timesofindia.indiatimes.com" + href
                             articles.append({"title": title, "url": href, "source": "Times of India"})
                             seen_titles.add(title)
+                            if len(articles) >= MAX_ARTICLES:
+                                print("Reached max articles in Structure 1")
+                                print(f"scrape_times_of_india_sports: {len(articles)} articles")
+                                return articles
+        print("Checked Structure 1")
 
-        # Structure 2: div.iN5CR a.lfn2e (with/without ckzLe card_13) > div.WavNE
-        for in5cr in soup.select('div.iN5CR'):
+        in5cr_divs = soup.select('div.iN5CR')
+        print("Found", len(in5cr_divs), "iN5CR divs")
+        for in5cr in in5cr_divs:
             a_tag = in5cr.find('a', class_='lfn2e', href=True)
             if a_tag:
                 wavne = a_tag.find('div', class_='WavNE')
@@ -199,6 +208,11 @@ def scrape_times_of_india_sports():
                             href = "https://timesofindia.indiatimes.com" + href
                         articles.append({"title": title, "url": href, "source": "Times of India"})
                         seen_titles.add(title)
+                        if len(articles) >= MAX_ARTICLES:
+                            print("Reached max articles in Structure 2")
+                            print(f"scrape_times_of_india_sports: {len(articles)} articles")
+                            return articles
+        print("Checked Structure 2")
         print(f"scrape_times_of_india_sports: {len(articles)} articles")
         return articles
     except Exception as e:
@@ -292,7 +306,7 @@ def scrape_sports_news(region="India", sources=None):
         "indian_express_sports": scrape_indian_express_sports,
         "ndtv_sports": scrape_ndtv_sports,
         "the_hindu": scrape_the_hindu_sports,
-        "times_of_india": scrape_times_of_india_sports,
+        "times_of_india_sports": scrape_times_of_india_sports,
     }
     global_source_map = {
         "espn_global": scrape_espn,
