@@ -34,6 +34,65 @@ technology_keywords = [
 
 
 # --- INDIA SOURCES ---
+
+def scrape_times_of_india_tech():
+    try:
+        session = get_session()
+        url = "https://timesofindia.indiatimes.com/technology"
+        response = session.get(url, timeout=15)
+        soup = BeautifulSoup(response.content, "html.parser")
+        articles = []
+        seen_titles = set()
+
+        # Structure 1: div.lSIdy.col_l_6.col_m_6 with multiple a.linktype1 links
+        for div in soup.select('div.lSIdy.col_l_6.col_m_6'):
+            for a_tag in div.find_all('a', class_='linktype1', href=True):
+                span_tag = a_tag.find('span')
+                if span_tag:
+                    title = clean_title(span_tag.get_text())
+                    href = a_tag.get('href', '')
+
+                    if title and title not in seen_titles and href:
+                        # Clean URL parameters
+                        href = href.split('?')[0]
+
+                        if href.startswith('/'):
+                            href = "https://timesofindia.indiatimes.com" + href
+                        elif not href.startswith('http'):
+                            continue
+
+                        articles.append({"title": title, "url": href, "source": "Times of India"})
+                        seen_titles.add(title)
+
+        # Structure 2: div.GLeza with h5 title
+        for div in soup.select('div.GLeza'):
+            a_tag = div.find('a', href=True)
+            if a_tag:
+                h5_tag = a_tag.find('h5')
+                if h5_tag:
+                    title = clean_title(h5_tag.get_text())
+                    href = a_tag.get('href', '')
+
+                    if title and title not in seen_titles and href:
+                        # Clean URL parameters
+                        href = href.split('?')[0]
+
+                        if href.startswith('/'):
+                            href = "https://timesofindia.indiatimes.com" + href
+                        elif not href.startswith('http'):
+                            continue
+
+                        articles.append({"title": title, "url": href, "source": "Times of India"})
+                        seen_titles.add(title)
+
+        print(f"scrape_times_of_india_tech: {len(articles)} articles")
+        return articles
+
+    except Exception as e:
+        print(f"Error scraping Times of India Technology: {e}")
+        return []
+
+
 def scrape_hindustan_times_tech():
     try:
         url = "https://www.hindustantimes.com/technology"
@@ -82,7 +141,7 @@ def scrape_hindustan_times_tech():
                     "source": "Hindustan Times"
                 })
                 seen_titles.add(title)
-
+        print(f"scrape_hindustan_times_tech: {len(articles)} articles")
         return articles
 
     except Exception as e:
@@ -235,6 +294,8 @@ def scrape_cnbc_tech():
         return []
 
 
+
+
 # --- WRAPPER FUNCTIONS ---
 def scrape_india_tech_news():
     all_articles = []
@@ -271,6 +332,7 @@ def scrape_global_tech_news():
 def scrape_technology_news(region="India", sources=None):
     india_source_map = {
         "hindustan_times": scrape_hindustan_times_tech,
+        "times_of_india": scrape_times_of_india_tech,
         "financial_express": scrape_financial_express_tech,
         "indian_express": scrape_indian_express_tech,
     }
@@ -288,6 +350,7 @@ def scrape_technology_news(region="India", sources=None):
         if func:
             try:
                 src_articles = func()
+                print(f"Technology News ({region} - {src}): {len(src_articles)} articles")
                 all_articles.extend(src_articles)
             except Exception as e:
                 print(f"Error in scrape_technology_news for source {src}: {e}")
