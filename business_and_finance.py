@@ -248,6 +248,50 @@ def scrape_indian_express_business():
         print(f"Error scraping Indian Express Business: {e}")
         return []
 
+def scrape_times_of_india_business():
+    try:
+        session = requests.Session()
+        session.headers.update({"User-Agent": "Mozilla/5.0"})
+        url = "https://timesofindia.indiatimes.com/business"
+        response = session.get(url, timeout=15)
+        soup = BeautifulSoup(response.content, "html.parser")
+        articles = []
+        seen_titles = set()
+
+        # Structure 1: div.lSIdy.col_l_6.col_m_6 with a.linktype1 > span
+        for div in soup.select('div.lSIdy.col_l_6.col_m_6'):
+            for a_tag in div.find_all('a', class_='linktype1', href=True):
+                span_tag = a_tag.find('span')
+                if span_tag:
+                    title = span_tag.get_text(strip=True)
+                    href = a_tag.get('href', '')
+                    if title and title not in seen_titles and href:
+                        if href.startswith('/'):
+                            href = "https://timesofindia.indiatimes.com" + href
+                        articles.append({"title": title, "url": href, "source": "Times of India"})
+                        seen_titles.add(title)
+
+        # Structure 2: div.col_l_2.col_m_3 with figure.zxvyz a > figcaption
+        for div in soup.select('div.col_l_2.col_m_3'):
+            for fig in div.find_all('figure', class_='zxvyz'):
+                a_tag = fig.find('a', href=True)
+                if a_tag:
+                    figcaption = a_tag.find('figcaption')
+                    if figcaption:
+                        title = figcaption.get_text(strip=True)
+                        href = a_tag.get('href', '')
+                        if title and title not in seen_titles and href:
+                            if href.startswith('/'):
+                                href = "https://timesofindia.indiatimes.com" + href
+                            articles.append({"title": title, "url": href, "source": "Times of India"})
+                            seen_titles.add(title)
+        print(f"scrape_times_of_india_business: {len(articles)} articles")
+        return articles
+    except Exception as e:
+        print(f"Error scraping Times of India Business: {e}")
+        return []
+
+
 # --- Global Business & Finance Sources ---
 
 def scrape_reuters_business_global():
@@ -449,6 +493,7 @@ def scrape_guardian_business_global():
         print(f"Error scraping Guardian Business: {e}")
         return []
 
+
 def scrape_business_finance_news(region="India", sources=None):
     all_articles = []
     
@@ -462,6 +507,7 @@ def scrape_business_finance_news(region="India", sources=None):
         "ndtv": scrape_ndtv_business,
         "deccan_herald": scrape_deccan_herald_business,
         "indian_express": scrape_indian_express_business,
+        "times_of_india": scrape_times_of_india_business,
     }
     
     global_source_map = {
