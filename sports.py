@@ -161,6 +161,52 @@ def scrape_the_hindu_sports():
     except Exception as e:
         return []
 
+def scrape_times_of_india_sports():
+    try:
+        session = requests.Session()
+        session.headers.update({"User-Agent": "Mozilla/5.0"})
+        url = "https://timesofindia.indiatimes.com/sports"
+        response = session.get(url, timeout=15)
+        soup = BeautifulSoup(response.content, "html.parser")
+        articles = []
+        seen_titles = set()
+
+        # Structure 1: div.vertical_12... with div.iN5CR a.lfn2e > div.WavNE
+        for main_div in soup.select('div.vertical_12.w_1.left_spacing.right_spacing.bottom_v_spacing.b_brdr.brdr_2'):
+            for in5cr in main_div.select('div.iN5CR'):
+                a_tag = in5cr.find('a', class_='lfn2e', href=True)
+                if a_tag:
+                    wavne = a_tag.find('div', class_='WavNE')
+                    if wavne:
+                        title = wavne.get_text(strip=True)
+                        href = a_tag.get('href', '')
+                        if title and title not in seen_titles and href:
+                            if href.startswith('/'):
+                                href = "https://timesofindia.indiatimes.com" + href
+                            articles.append({"title": title, "url": href, "source": "Times of India"})
+                            seen_titles.add(title)
+
+        # Structure 2: div.iN5CR a.lfn2e (with/without ckzLe card_13) > div.WavNE
+        for in5cr in soup.select('div.iN5CR'):
+            a_tag = in5cr.find('a', class_='lfn2e', href=True)
+            if a_tag:
+                wavne = a_tag.find('div', class_='WavNE')
+                if wavne:
+                    title = wavne.get_text(strip=True)
+                    href = a_tag.get('href', '')
+                    if title and title not in seen_titles and href:
+                        if href.startswith('/'):
+                            href = "https://timesofindia.indiatimes.com" + href
+                        articles.append({"title": title, "url": href, "source": "Times of India"})
+                        seen_titles.add(title)
+        print(f"scrape_times_of_india_sports: {len(articles)} articles")
+        return articles
+    except Exception as e:
+        print(f"Error scraping Times of India Sports: {e}")
+        return []
+
+
+
 # Global Sports News
 
 def scrape_espn():
@@ -236,6 +282,7 @@ def scrape_bbc_sport():
     except Exception as e:
         return []
 
+
 # Controller function
 def scrape_sports_news(region="India", sources=None):
     all_articles = []
@@ -245,6 +292,7 @@ def scrape_sports_news(region="India", sources=None):
         "indian_express_sports": scrape_indian_express_sports,
         "ndtv_sports": scrape_ndtv_sports,
         "the_hindu": scrape_the_hindu_sports,
+        "times_of_india": scrape_times_of_india_sports,
     }
     global_source_map = {
         "espn_global": scrape_espn,
