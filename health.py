@@ -64,7 +64,7 @@ def scrape_times_of_india_health():
         url = "https://timesofindia.indiatimes.com/life-style/health-fitness/health-news"
         response = session.get(url, timeout=15)
         soup = BeautifulSoup(response.content, "html.parser")
-        
+
         articles = []
         seen_titles = set()
 
@@ -120,7 +120,7 @@ def indian_express_health():
         url = "https://indianexpress.com/section/lifestyle/health/"
         response = session.get(url, timeout=15)
         soup = BeautifulSoup(response.content, "html.parser")
-        
+
         articles = []
         seen_titles = set()
 
@@ -347,11 +347,11 @@ def scrape_bloomberg_health():
 def scrape_health_news(region="India", sources=None):
     all_articles = []
 
-   india_source_map = {
+    india_source_map = {
         "hindustan_times": scrape_hindustan_times_health,
         "times_of_india": scrape_times_of_india_health,
         "times_now": scrape_times_now_health,
-    
+
         "indian_express": indian_express_health,
     }
 
@@ -390,5 +390,3 @@ if __name__ == "__main__":
     global_health_articles = scrape_health_news(region="Global")
     for i, art in enumerate(global_health_articles, 1):
         print(f"{i}. {art['title']} ({art.get('source', 'Unknown')})\n   {art['url']}\n")
-
-
