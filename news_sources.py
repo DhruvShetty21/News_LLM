@@ -166,9 +166,9 @@ def scrape_times_of_india():
         soup = BeautifulSoup(response.content, "html.parser")
         articles = []
         seen_titles = set()
+        MAX_ARTICLES = 50
 
         # Primary pattern: Articles in div with class "lSIdy col_l_6 col_m_6"
-        # Each div can contain multiple <a> tags with <span> elements
         for div in soup.select('div.lSIdy.col_l_6.col_m_6'):
             for a_tag in div.find_all('a', href=True):
                 span_tag = a_tag.find('span')
@@ -177,51 +177,50 @@ def scrape_times_of_india():
                     href = a_tag.get('href', '')
 
                     if title and title not in seen_titles and href:
-                        # Clean URL parameters
                         href = href.split('?')[0]
-
                         if href.startswith('/'):
                             href = "https://timesofindia.indiatimes.com" + href
                         elif not href.startswith('http'):
                             continue
-
                         articles.append({"title": title, "url": href, "source": "Times of India"})
                         seen_titles.add(title)
+                        if len(articles) >= MAX_ARTICLES:
+                            print(f"Times of India scraper found {len(articles)} articles (limit reached)")
+                            return articles
 
         # Secondary pattern: Articles with figcaption and p tags
         for a_tag in soup.find_all('a', href=True):
+            if len(articles) >= MAX_ARTICLES:
+                print(f"Times of India scraper found {len(articles)} articles (limit reached)")
+                return articles
             figcaption = a_tag.find('figcaption')
-
             if figcaption:
                 title = clean_title(figcaption.get_text())
                 href = a_tag.get('href', '')
-
                 if title and title not in seen_titles and href and 'education' in href:
                     href = href.split('?')[0]
-
                     if href.startswith('/'):
                         href = "https://timesofindia.indiatimes.com" + href
                     elif not href.startswith('http'):
                         continue
-
                     articles.append({"title": title, "url": href, "source": "Times of India"})
                     seen_titles.add(title)
 
         # Alternative pattern: Look for general education section links with class "linktype1"
         for a_tag in soup.select('a.linktype1[href*="education"]'):
+            if len(articles) >= MAX_ARTICLES:
+                print(f"Times of India scraper found {len(articles)} articles (limit reached)")
+                return articles
             span_tag = a_tag.find('span')
             if span_tag:
                 title = clean_title(span_tag.get_text())
                 href = a_tag.get('href', '')
-
                 if title and title not in seen_titles and href:
                     href = href.split('?')[0]
-
                     if href.startswith('/'):
                         href = "https://timesofindia.indiatimes.com" + href
                     elif not href.startswith('http'):
                         continue
-
                     articles.append({"title": title, "url": href, "source": "Times of India"})
                     seen_titles.add(title)
 
