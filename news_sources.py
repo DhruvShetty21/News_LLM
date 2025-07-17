@@ -352,31 +352,27 @@ def scrape_ndtv_education():
         print(f"Error scraping NDTV: {e}")
         return []
 
-def scrape_financial_express_education():
+def scrape_financial_express_education(max_pages=5):
     try:
         session = get_session()
-        url = "https://www.financialexpress.com/education/"
-        response = session.get(url, timeout=15)
-        soup = BeautifulSoup(response.content, "html.parser")
         articles = []
-
-        selectors = ['.listitembx h3 a', 'h2 a', '.title a']
-
         seen_titles = set()
-        for selector in selectors:
-            for tag in soup.select(selector):
-                title = clean_title(tag.get_text())
-                href = tag.get('href', '')
-
+        for page in range(1, max_pages + 1):
+            if page == 1:
+                url = "https://www.financialexpress.com/about/education/"
+            else:
+                url = f"https://www.financialexpress.com/about/education/page/{page}/"
+            response = session.get(url, timeout=15)
+            soup = BeautifulSoup(response.content, "html.parser")
+            for entry in soup.select('div.entry-wrapper'):
+                title_tag = entry.select_one('div.entry-title a')
+                if not title_tag:
+                    continue
+                title = clean_title(title_tag.get_text())
+                href = title_tag.get('href', '')
                 if title and title not in seen_titles and href:
-                    if href.startswith('/'):
-                        href = "https://www.financialexpress.com" + href
-                    elif not href.startswith('http'):
-                        continue
-
                     articles.append({"title": title, "url": href, "source": "Financial Express"})
                     seen_titles.add(title)
-
         return articles
     except Exception as e:
         print(f"Error scraping Financial Express: {e}")
@@ -753,3 +749,15 @@ def scrape_news(region, sources=None):
 
     print(f"Total unique articles found: {len(unique_articles)}")
     return unique_articles, errors
+
+# ---------- Entry Point ----------
+if __name__ == "__main__":
+    print("------ INDIA ARTICLES ------")
+    india_articles, india_errors = scrape_news("India")
+    for i, art in enumerate(india_articles, 1):
+        print(f"{i}. {art['title']} ({art['source']})\n   {art['url']}")
+
+    print("\n------ GLOBAL ARTICLES ------")
+    global_articles, global_errors = scrape_news("Global")
+    for i, art in enumerate(global_articles, 1):
+        print(f"{i}. {art['title']} ({art['source']})\n   {art['url']}")
