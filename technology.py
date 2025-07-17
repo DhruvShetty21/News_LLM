@@ -47,7 +47,7 @@ def scrape_times_of_india_tech(sources=None):
         if sources and isinstance(sources, list) and len(sources) == 1 and sources[0] == "times_of_india":
             MAX_ARTICLES = 60
         else:
-            MAX_ARTICLES = 40
+            MAX_ARTICLES = 30
 
         # Structure 1: div.lSIdy.col_l_6.col_m_6 with multiple a.linktype1 links
         for div in soup.select('div.lSIdy.col_l_6.col_m_6'):
