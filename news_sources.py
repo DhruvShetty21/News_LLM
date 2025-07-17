@@ -158,7 +158,7 @@ def scrape_hindustan_times():
 
 # ...existing code...
 
-def scrape_times_of_india():
+def scrape_times_of_india(sources=None):
     try:
         session = get_session()
         url = "https://timesofindia.indiatimes.com/education"
@@ -166,7 +166,11 @@ def scrape_times_of_india():
         soup = BeautifulSoup(response.content, "html.parser")
         articles = []
         seen_titles = set()
-        MAX_ARTICLES = 50
+        # Determine the max articles based on sources
+        if sources and isinstance(sources, list) and len(sources) == 1 and sources[0] == "times_of_india":
+            MAX_ARTICLES = 60
+        else:
+            MAX_ARTICLES = 30
 
         # Primary pattern: Articles in div with class "lSIdy col_l_6 col_m_6"
         for div in soup.select('div.lSIdy.col_l_6.col_m_6'):
@@ -351,12 +355,17 @@ def scrape_ndtv_education():
         print(f"Error scraping NDTV: {e}")
         return []
 
-def scrape_financial_express_education(max_pages=2):
+def scrape_financial_express_education(max_pages=3):
     try:
         session = get_session()
         articles = []
         seen_titles = set()
+        MAX_ARTICLES = 100
+
         for page in range(1, max_pages + 1):
+            if len(articles) >= MAX_ARTICLES:
+                print(f"Financial Express scraper found {len(articles)} articles (limit reached)")
+                return articles
             if page == 1:
                 url = "https://www.financialexpress.com/about/education/"
             else:
@@ -364,6 +373,9 @@ def scrape_financial_express_education(max_pages=2):
             response = session.get(url, timeout=15)
             soup = BeautifulSoup(response.content, "html.parser")
             for entry in soup.select('div.entry-wrapper'):
+                if len(articles) >= MAX_ARTICLES:
+                    print(f"Financial Express scraper found {len(articles)} articles (limit reached)")
+                    return articles
                 title_tag = entry.select_one('div.entry-title a')
                 if not title_tag:
                     continue
@@ -372,6 +384,7 @@ def scrape_financial_express_education(max_pages=2):
                 if title and title not in seen_titles and href:
                     articles.append({"title": title, "url": href, "source": "Financial Express"})
                     seen_titles.add(title)
+        print(f"Financial Express scraper found {len(articles)} articles")
         return articles
     except Exception as e:
         print(f"Error scraping Financial Express: {e}")
@@ -682,7 +695,7 @@ def scrape_news(region, sources=None):
         "flipboard": lambda: scrape_flipboard(region),
         "scoopit": lambda: scrape_scoopit(region),
         "hindustan_times": scrape_hindustan_times,
-        "times_of_india": scrape_times_of_india,
+        "times_of_india": (lambda: scrape_times_of_india(sources)),
         "indian_express": scrape_indian_express_education,
         "the_hindu": scrape_the_hindu_education,
         "deccan_herald": scrape_deccan_herald_education,
