@@ -36,7 +36,7 @@ def scrape_financial_express_industry():
     session = requests.Session()
     session.headers.update({"User-Agent": "Mozilla/5.0"})
     try:
-        for page in range(1, 5):
+        for page in range(1, 3):
             url = f"https://www.financialexpress.com/business/industry/page/{page}/" if page > 1 else "https://www.financialexpress.com/business/industry/"
             response = session.get(url, timeout=15)
             soup = BeautifulSoup(response.content, "html.parser")
