@@ -116,28 +116,76 @@ def scrape_hindustan_times():
     seen_titles = set()
     session = get_http_session()
     try:
-        for page in range(1, 4):  # Scrape pages 1 to 3
-            url = f"https://www.hindustantimes.com/environment/page-{page}" if page > 1 else "https://www.hindustantimes.com/environment"
-            response = session.get(url, timeout=15)
-            soup = BeautifulSoup(response.content, "html.parser")
-            for div in soup.find_all('div', class_='cartHolder listView track '):
-                h3 = div.find('h3', class_='hdg3')
-                if not h3:
+        url = "https://www.hindustantimes.com/topic/environment"
+        response = session.get(url, timeout=15)
+        soup = BeautifulSoup(response.content, "html.parser")
+        # Find all article containers with the new class
+        for div in soup.find_all('div', class_='cartHolder'):
+            h2 = div.find('h2', class_='hdg3')
+            if not h2:
+                continue
+            a_tag = h2.find('a', href=True)
+            if not a_tag:
+                continue
+            title = normalize_title(a_tag.get_text())
+            href = a_tag['href']
+            if not href.startswith('http'):
+                href = f"https://www.hindustantimes.com{href}" if href.startswith('/') else f"https://www.hindustantimes.com/{href}"
+            if title and title not in seen_titles and any(kw in title.lower() for kw in environment_keywords):
+                articles.append({"title": title, "url": href, "source": "Hindustan Times"})
+                seen_titles.add(title)
+            if len(articles) >= 10:
+                break
+        return articles
+    except Exception as e:
+        print(f"scrape_hindustan_times error: {e}")
+        return []
+
+def scrape_times_of_india_environment():
+    
+    try:
+        session = get_http_session()
+        url = "https://timesofindia.indiatimes.com/home/environment"
+        response = session.get(url, timeout=15)
+        soup = BeautifulSoup(response.content, "html.parser")
+        articles = []
+        seen_titles = set()
+        # First structure: <ul class="list5 clearfix">
+        for ul in soup.find_all("ul", class_="list5 clearfix"):
+            for li in ul.find_all("li"):
+                span = li.find("span", class_="w_tle")
+                if not span:
                     continue
-                a_tag = h3.find('a', href=True)
+                a_tag = span.find("a", href=True)
                 if not a_tag:
                     continue
-                title = normalize_title(a_tag.get_text())
-                href = a_tag['href']
-                if href.startswith('/'):
-                    href = "https://www.hindustantimes.com" + href
-                if title and title not in seen_titles:
-                    articles.append({"title": title, "url": href, "source": "Hindustan Times"})
+                title = normalize_title(a_tag.get("title") or a_tag.text)
+                href = a_tag["href"]
+                if not href.startswith("http"):
+                    href = f"https://timesofindia.indiatimes.com{href}"
+                if title and title not in seen_titles and any(kw in title.lower() for kw in environment_keywords):
+                    articles.append({"title": title, "url": href, "source": "Times of India"})
                     seen_titles.add(title)
-
-        print(f"scrape_hindustan_times: {len(articles)} articles")
+        # Second structure: <ul id="content" class="top-newslist clearfix">
+        content_ul = soup.find("ul", id="content", class_="top-newslist clearfix")
+        if content_ul:
+            for li in content_ul.find_all("li"):
+                span = li.find("span", class_="w_tle")
+                if not span:
+                    continue
+                a_tag = span.find("a", href=True)
+                if not a_tag:
+                    continue
+                title = normalize_title(a_tag.get("title") or a_tag.text)
+                href = a_tag["href"]
+                if not href.startswith("http"):
+                    href = f"https://timesofindia.indiatimes.com{href}"
+                if title and title not in seen_titles and any(kw in title.lower() for kw in environment_keywords):
+                    articles.append({"title": title, "url": href, "source": "Times of India"})
+                    seen_titles.add(title)
         return articles
-    except Exception:
+    except Exception as e:
+        print(f"scrape_times_of_india_environment error: {e}")
         return []
 
 #--------GLOBAL NEWS-------------------
@@ -215,6 +263,7 @@ def scrape_environment_news(region="India", sources=None):
         "indian_express": scrape_indian_express,
         "ndtv": scrape_ndtv,
         "hindustan_times": scrape_hindustan_times,
+        "times_of_india": scrape_times_of_india_environment,  # Added Times of India
     }
     global_source_map = {
         "euronews": scrape_euronews,
