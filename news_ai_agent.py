@@ -166,7 +166,7 @@ def process_and_send(emails, category, region, top_n=10, sources=None):
         topic = f"{region} Health"
     else:
         articles, errors = scrape_news(region, sources)
-        topic = region if region else "General"
+        topic = f"{region} Education" if region else "Education"
 
     print(f"[process_and_send] Scraping complete. Found {len(articles)} articles.")
 
