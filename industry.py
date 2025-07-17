@@ -11,7 +11,7 @@ def scrape_the_hindu_industry():
     session = requests.Session()
     session.headers.update({"User-Agent": "Mozilla/5.0"})
     try:
-        for page in range(1, 4):
+        for page in range(1, 3):
             url = f"https://www.thehindu.com/business/Industry/?page={page}"
             response = session.get(url, timeout=15)
             soup = BeautifulSoup(response.content, "html.parser")
