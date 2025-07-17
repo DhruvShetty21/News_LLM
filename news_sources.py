@@ -166,7 +166,7 @@ def scrape_times_of_india():
         soup = BeautifulSoup(response.content, "html.parser")
         articles = []
         seen_titles = set()
-        MAX_ARTICLES = 50
+        MAX_ARTICLES = 60
 
         # Primary pattern: Articles in div with class "lSIdy col_l_6 col_m_6"
         for div in soup.select('div.lSIdy.col_l_6.col_m_6'):
