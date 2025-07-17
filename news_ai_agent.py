@@ -22,12 +22,11 @@ def select_top_news_with_gemini(articles, top_n=10, return_scores=False):
     print(f"[Gemini] Preparing to call Gemini LLM with {len(articles)} articles, requesting top {top_n}.")
     if not GEMINI_API_KEY:
         print("Gemini API key not found.")
-        return articles[:top_n] if not return_scores else [(art, None) for art in articles[:top_n]]
+        return (articles[:top_n] if not return_scores else [(art, None) for art in articles[:top_n]]), True
 
     llm = ChatGoogleGenerativeAI(
         model="models/gemini-1.5-flash", google_api_key=GEMINI_API_KEY
     )
-
     prompt = (
         "You are an expert news assistant. "
         "Given the following list of news headlines (with their sources and links), "
@@ -36,26 +35,20 @@ def select_top_news_with_gemini(articles, top_n=10, return_scores=False):
         "Return your answer as a numbered list in this format:\n"
         "<SOURCE>, <HEADLINE>\n<LINK>\nScore: <score>\n\n"
         "Here is the list:\n"
-        
     )
-
     for idx, article in enumerate(articles, 1):
         source = article.get("source", "Unknown Source")
         title = article["title"]
         url = article["url"]
         prompt += f"{idx}. {source}, {title}\n{url}\n"
-
     print("[Gemini] Calling Gemini LLM API...")
     try:
         response = llm.invoke([HumanMessage(content=prompt)])
     except Exception as e:
         print(f"[Gemini] API call failed: {e}")
-        # Return a fallback: top N articles by default
-        return articles[:top_n] if not return_scores else [(art, None) for art in articles[:top_n]]
+        return (articles[:top_n] if not return_scores else [(art, None) for art in articles[:top_n]]), True
     print("[Gemini] Gemini LLM API call completed.")
     print("Gemini raw output:\n", response.content)
-
-    # Source mapping for equivalence
     def normalize_source_name(name):
         mapping = {
             "toi": "times of india",
@@ -63,10 +56,8 @@ def select_top_news_with_gemini(articles, top_n=10, return_scores=False):
             "TOI": "times of india",
             "financial express": "financial express",
             "Financial Express": "financial express",
-            # Add more mappings as needed
         }
         return mapping.get(name.strip().lower(), name.strip().lower())
-
     lines = str(response.content).split("\n")
     scored_articles = []
     i = 0
@@ -78,7 +69,6 @@ def select_top_news_with_gemini(articles, top_n=10, return_scores=False):
             score_line = lines[i + 2].strip() if i + 2 < len(lines) else ""
             score_match = re.search(r"Score:\s*(\d+)", score_line)
             score = int(score_match.group(1)) if score_match else 0
-            # Extract source from Gemini output
             if "," in source_headline:
                 gemini_source = source_headline.split(",", 1)[0].strip()
             else:
@@ -92,9 +82,9 @@ def select_top_news_with_gemini(articles, top_n=10, return_scores=False):
             i += 3
         else:
             i += 1
-
     scored_articles.sort(key=lambda x: x[1], reverse=True)
-    return scored_articles[:top_n] if return_scores else [art for art, score in scored_articles[:top_n]]
+    return (scored_articles[:top_n] if return_scores else [art for art, score in scored_articles[:top_n]]), False
+
 
 def create_display_url(url, max_length=50):
     if len(url) <= max_length:
@@ -184,13 +174,13 @@ def process_and_send(emails, category, region, top_n=10, sources=None):
             msg += "\n\n\u26a0\ufe0f Some sources failed to scrape:\n" + "\n".join(errors)
         return msg
 
-    # NEW: If user asks for N news and total scraped < N, return all scraped news
+    gemini_failed = False
     if len(articles) <= top_n:
         print(f"[process_and_send] Fewer articles ({len(articles)}) than requested ({top_n}). Returning all scraped articles.")
         top_articles = articles
     else:
         print(f"Calling select_top_news_with_gemini with {len(articles)} articles.")
-        top_articles = select_top_news_with_gemini(articles, top_n=top_n)
+        top_articles, gemini_failed = select_top_news_with_gemini(articles, top_n=top_n)
         print(f"Gemini selection complete. {len(top_articles)} articles selected.")
 
     email_body = format_email(top_articles)
@@ -198,8 +188,9 @@ def process_and_send(emails, category, region, top_n=10, sources=None):
     subject = f"{topic} News Digest - (Top {top_n} articles)"
 
     success, failed = [], []
+    print("Sources in top_articles:", [a['source'] for a in top_articles])
     for email in email_list:
-        if send_email(email, subject, email_body, html_body):
+        if send_email(email, subject, email_body, html_body, gemini_failed=gemini_failed):
             success.append(email)
         else:
             failed.append(email)
@@ -211,4 +202,6 @@ def process_and_send(emails, category, region, top_n=10, sources=None):
         msg += f"\u274c Failed to send email to: {', '.join(failed)}"
     if errors:
         msg += "\n\n\u26a0\ufe0f Some sources failed to scrape:\n" + "\n".join(errors)
+    if gemini_failed:
+    msg += "\n⚠️ API key exhausted, Please update."
     return msg.strip()
