@@ -355,12 +355,12 @@ def scrape_ndtv_education():
         print(f"Error scraping NDTV: {e}")
         return []
 
-def scrape_financial_express_education(max_pages=3):
+def scrape_financial_express_education(max_pages=5):
     try:
         session = get_session()
         articles = []
         seen_titles = set()
-        MAX_ARTICLES = 100
+        MAX_ARTICLES = 40
 
         for page in range(1, max_pages + 1):
             if len(articles) >= MAX_ARTICLES:
