@@ -203,5 +203,5 @@ def process_and_send(emails, category, region, top_n=10, sources=None):
     if errors:
         msg += "\n\n\u26a0\ufe0f Some sources failed to scrape:\n" + "\n".join(errors)
     if gemini_failed:
-    msg += "\n⚠️ API key exhausted, Please update."
+        msg += "\n⚠️ API key exhausted, Please update."
     return msg.strip()
