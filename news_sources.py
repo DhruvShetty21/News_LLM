@@ -170,7 +170,7 @@ def scrape_times_of_india(sources=None):
         if sources and isinstance(sources, list) and len(sources) == 1 and sources[0] == "times_of_india":
             MAX_ARTICLES = 60
         else:
-            MAX_ARTICLES = 30
+            MAX_ARTICLES = 40
 
         # Primary pattern: Articles in div with class "lSIdy col_l_6 col_m_6"
         for div in soup.select('div.lSIdy.col_l_6.col_m_6'):
