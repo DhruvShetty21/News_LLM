@@ -175,6 +175,11 @@ def process_and_send(emails, category, region, top_n=10, sources=None):
         return msg
 
     gemini_failed = False
+    MAX_GEMINI_ARTICLES = 90
+    if len(articles) > MAX_GEMINI_ARTICLES:
+        print(f"Limiting articles sent to Gemini from {len(articles)} to {MAX_GEMINI_ARTICLES}")
+        articles = articles[:MAX_GEMINI_ARTICLES]
+
     if len(articles) <= top_n:
         print(f"[process_and_send] Fewer articles ({len(articles)}) than requested ({top_n}). Returning all scraped articles.")
         top_articles = articles
