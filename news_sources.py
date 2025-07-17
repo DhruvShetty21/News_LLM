@@ -166,7 +166,7 @@ def scrape_times_of_india():
         soup = BeautifulSoup(response.content, "html.parser")
         articles = []
         seen_titles = set()
-        MAX_ARTICLES = 60
+        MAX_ARTICLES = 50
 
         # Primary pattern: Articles in div with class "lSIdy col_l_6 col_m_6"
         for div in soup.select('div.lSIdy.col_l_6.col_m_6'):
@@ -351,7 +351,7 @@ def scrape_ndtv_education():
         print(f"Error scraping NDTV: {e}")
         return []
 
-def scrape_financial_express_education(max_pages=3):
+def scrape_financial_express_education(max_pages=2):
     try:
         session = get_session()
         articles = []
