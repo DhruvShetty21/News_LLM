@@ -175,7 +175,7 @@ def process_and_send(emails, category, region, top_n=10, sources=None):
         return msg
 
     gemini_failed = False
-    MAX_GEMINI_ARTICLES = 70
+    MAX_GEMINI_ARTICLES = 55
     if len(articles) > MAX_GEMINI_ARTICLES:
         print(f"Limiting articles sent to Gemini from {len(articles)} to {MAX_GEMINI_ARTICLES}")
         articles = articles[:MAX_GEMINI_ARTICLES]
