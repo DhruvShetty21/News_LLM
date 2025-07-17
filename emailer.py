@@ -218,7 +218,7 @@ def build_html_email(articles, topic="News"):
     """
     return html_body
 
-def send_email(to, subject, body, html_body=None):
+def send_email(to, subject, body, html_body=None, gemini_failed=False):
     from_email = os.getenv("EMAIL")
     password = os.getenv("PASS")
 
@@ -243,7 +243,10 @@ def send_email(to, subject, body, html_body=None):
         with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as server:
             server.login(from_email, password)
             server.send_message(msg)
-        print(f"✅ Email sent successfully to {to}")
+        if gemini_failed:
+            print(f"✅ Email sent successfully to {to} | ⚠️ Gemini key exhausted, Please renew.")
+        else:
+            print(f"✅ Email sent successfully to {to}")
         return True
     except Exception as e:
         print(f"❌ Failed to send email to {to}: {e}")
