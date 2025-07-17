@@ -265,12 +265,12 @@ function showSources() {
     // Handle sources for the selected category and region
     if (sources[category] && sources[category]['India']) {
         sources[category]['India'].forEach(src => {
-            indiaBox.innerHTML += `<label><input type="checkbox" name="sources" value="${src.value}" checked> ${src.label}</label>`;
+            indiaBox.innerHTML += `<label><input type="checkbox" name="sources" value="${src.value}" > ${src.label}</label>`;
         });
     }
     if (sources[category] && sources[category]['Global']) {
         sources[category]['Global'].forEach(src => {
-            globalBox.innerHTML += `<label><input type="checkbox" name="sources" value="${src.value}" checked> ${src.label}</label>`;
+            globalBox.innerHTML += `<label><input type="checkbox" name="sources" value="${src.value}" > ${src.label}</label>`;
         });
     }
     
