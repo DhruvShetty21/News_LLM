@@ -35,7 +35,7 @@ technology_keywords = [
 
 # --- INDIA SOURCES ---
 
-def scrape_times_of_india_tech():
+def scrape_times_of_india_tech(sources=None):
     try:
         session = get_session()
         url = "https://timesofindia.indiatimes.com/technology"
@@ -43,6 +43,11 @@ def scrape_times_of_india_tech():
         soup = BeautifulSoup(response.content, "html.parser")
         articles = []
         seen_titles = set()
+        # Determine max articles
+        if sources and isinstance(sources, list) and len(sources) == 1 and sources[0] == "times_of_india":
+            MAX_ARTICLES = 60
+        else:
+            MAX_ARTICLES = 40
 
         # Structure 1: div.lSIdy.col_l_6.col_m_6 with multiple a.linktype1 links
         for div in soup.select('div.lSIdy.col_l_6.col_m_6'):
@@ -63,9 +68,15 @@ def scrape_times_of_india_tech():
 
                         articles.append({"title": title, "url": href, "source": "Times of India"})
                         seen_titles.add(title)
+                        if len(articles) >= MAX_ARTICLES:
+                            print(f"scrape_times_of_india_tech: {len(articles)} articles (limit reached)")
+                            return articles
 
         # Structure 2: div.GLeza with h5 title
         for div in soup.select('div.GLeza'):
+            if len(articles) >= MAX_ARTICLES:
+                print(f"scrape_times_of_india_tech: {len(articles)} articles (limit reached)")
+                return articles
             a_tag = div.find('a', href=True)
             if a_tag:
                 h5_tag = a_tag.find('h5')
@@ -84,6 +95,9 @@ def scrape_times_of_india_tech():
 
                         articles.append({"title": title, "url": href, "source": "Times of India"})
                         seen_titles.add(title)
+                        if len(articles) >= MAX_ARTICLES:
+                            print(f"scrape_times_of_india_tech: {len(articles)} articles (limit reached)")
+                            return articles
 
         print(f"scrape_times_of_india_tech: {len(articles)} articles")
         return articles
@@ -332,7 +346,7 @@ def scrape_global_tech_news():
 def scrape_technology_news(region="India", sources=None):
     india_source_map = {
         "hindustan_times": scrape_hindustan_times_tech,
-        "times_of_india": scrape_times_of_india_tech,
+        "times_of_india": lambda: scrape_times_of_india_tech(sources),
         "financial_express": scrape_financial_express_tech,
         "indian_express": scrape_indian_express_tech,
     }
